@@ -99,6 +99,13 @@ if [ "$DISPLAY_VALUE" == "Nextion" ] ; then
 	/usr/local/sbin/.wpsd-nextion-text.py /dev/ttyAMA0 t0 "Auto-Updating..."
     fi
 fi
+if [ "$DISPLAY_VALUE" == "OLED" ] ; then
+    if [ "${OS_VER}" -ge "12" ] ; then
+	killall NextionDriver  > /dev/null 2>&1
+	/usr/local/sbin/.wpsd-oled.text.py --text1 "Auto Updating..." --text2 "Don't remove power!"
+    fi
+fi
+
 /usr/local/sbin/wpsd-services fullstop > /dev/null 2>&1
 
 echo -e "\nChecking connectivity to WPSD update server..."
