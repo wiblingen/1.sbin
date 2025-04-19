@@ -60,7 +60,7 @@ sed -i "/password=/c\\password=${IRCDDBPW}" /root/.Remote\ Control
 TIMEZONE=$(grep -oP '^Timezone = \K.*' /etc/WPSD-Dashboard-Config.ini)
 timedatectl set-timezone ${TIMEZONE}
 
-/usr/local/sbin/nextion-driver-helper
+/usr/local/sbin/.wpsd-display-driver-helper
 
 /usr/local/sbin/.wpsd-sys-cache
 

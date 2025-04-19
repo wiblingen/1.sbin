@@ -196,15 +196,15 @@ perform_update() {
 
     if [ "$DISPLAY_VALUE" == "Nextion" ] ; then
 	if [ "${OS_VER}" -ge "12" ] ; then
- 	    killall NextionDriver  > /dev/null 2>&1
+	    systemctl stop nextiondriver.service > /dev/null 2>&1
  	    /usr/local/sbin/.wpsd-nextion-text.py t1 "Please Wait..."
-	    /usr/local/sbin/.wpsd-nextion-text.py t0 "Auto-Updating..."
+	    /usr/local/sbin/.wpsd-nextion-text.py t0 "Updating..."
 	fi
     fi
     if [ "$DISPLAY_VALUE" == "OLED" ] ; then
 	if [ "${OS_VER}" -ge "12" ] ; then
-	    systemctl stop mmdvmhost.timer
-	    systemctl stop mmdvmhost.service
+	    systemctl stop mmdvmhost.timer > /dev/null 2>&1
+	    systemctl stop mmdvmhost.service > /dev/null 2>&1
 	    /usr/local/sbin/.wpsd-oled.text.py --text1 "Updating..." --text2 "Please Wait..."
 	fi
     fi
@@ -401,11 +401,16 @@ perform_update() {
     systemctl is-active --quiet wpsd-nightly-tasks.timer || systemctl start wpsd-nightly-tasks.timer > /dev/null 2>&1
     systemctl is-active --quiet wpsd-cache.timer || systemctl start wpsd-cache.timer > /dev/null 2>&1
 
+    if [ "$DISPLAY_VALUE" == "Nextion" ] ; then
+	if ! systemctl is-active --quiet nextiondriver.service; then
+	    systemctl start nextiondriver.service > /dev/null 2>&1
+ 	fi
+    fi
     if ! systemctl is-active --quiet mmdvmhost.service; then
-	systemctl start mmdvmhost.service
+	systemctl start mmdvmhost.service > /dev/null 2>&1
     fi
     if ! systemctl is-active --quiet mmdvmhost.timer; then
-	systemctl start mmdvmhost.timer
+	systemctl start mmdvmhost.timer > /dev/null 2>&1
     fi
 
     echo -e "  ${TICK} Done!\n" # maint. complete
