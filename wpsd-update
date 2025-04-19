@@ -203,8 +203,9 @@ perform_update() {
     fi
     if [ "$DISPLAY_VALUE" == "OLED" ] ; then
 	if [ "${OS_VER}" -ge "12" ] ; then
+	    systemctl stop mmdvmhost.timer
 	    systemctl stop mmdvmhost.service
-	    /usr/local/sbin/.wpsd-oled.text.py --text1 "Auto Updating..." --text2 "Please Wait..."
+	    /usr/local/sbin/.wpsd-oled.text.py --text1 "Updating..." --text2 "Please Wait..."
 	fi
     fi
 
@@ -402,6 +403,9 @@ perform_update() {
 
     if ! systemctl is-active --quiet mmdvmhost.service; then
 	systemctl start mmdvmhost.service
+    fi
+    if ! systemctl is-active --quiet mmdvmhost.timer; then
+	systemctl start mmdvmhost.timer
     fi
 
     echo -e "  ${TICK} Done!\n" # maint. complete
