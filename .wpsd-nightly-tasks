@@ -101,8 +101,7 @@ if [ "$DISPLAY_VALUE" == "Nextion" ] ; then
 fi
 if [ "$DISPLAY_VALUE" == "OLED" ] ; then
     if [ "${OS_VER}" -ge "12" ] ; then
-	killall NextionDriver  > /dev/null 2>&1
-	/usr/local/sbin/.wpsd-oled.text.py --text1 "Auto Updating..." --text2 "Don't remove power!"
+	/usr/local/sbin/.wpsd-oled.text.py --text1 "Auto Updating..." --text2 "Please Wait..."
     fi
 fi
 

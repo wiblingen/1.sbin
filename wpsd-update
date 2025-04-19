@@ -194,6 +194,19 @@ perform_update() {
     pkill .wpsd-slipstream-tasks > /dev/null 2>&1
     pkill .wpsd-running-tasks > /dev/null 2>&1
 
+    if [ "$DISPLAY_VALUE" == "Nextion" ] ; then
+	if [ "${OS_VER}" -ge "12" ] ; then
+ 	    killall NextionDriver  > /dev/null 2>&1
+ 	    /usr/local/sbin/.wpsd-nextion-text.py /dev/ttyAMA0 t1 "Please Wait..."
+	    /usr/local/sbin/.wpsd-nextion-text.py /dev/ttyAMA0 t0 "Auto-Updating..."
+	fi
+    fi
+    if [ "$DISPLAY_VALUE" == "OLED" ] ; then
+	if [ "${OS_VER}" -ge "12" ] ; then
+	    /usr/local/sbin/.wpsd-oled.text.py --text1 "Auto Updating..." --text2 "Please Wait..."
+	fi
+    fi
+
     systemctl is-active --quiet cron.service && systemctl stop cron.service > /dev/null 2>&1
     systemctl is-active --quiet wpsd-running-tasks.timer && systemctl stop wpsd-running-tasks.timer > /dev/null 2>&1
     systemctl is-active --quiet wpsd-running-tasks.service && systemctl stop wpsd-running-tasks.service > /dev/null 2>&1
