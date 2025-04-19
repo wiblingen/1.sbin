@@ -95,8 +95,8 @@ echo -e "\nStopping services..."
 if [ "$DISPLAY_VALUE" == "Nextion" ] ; then
     if [ "${OS_VER}" -ge "12" ] ; then
 	killall NextionDriver  > /dev/null 2>&1
-	/usr/local/sbin/.wpsd-nextion-text.py /dev/ttyAMA0 t1 "Please Wait..."
-	/usr/local/sbin/.wpsd-nextion-text.py /dev/ttyAMA0 t0 "Auto-Updating..."
+	/usr/local/sbin/.wpsd-nextion-text.py t1 "Please Wait..."
+	/usr/local/sbin/.wpsd-nextion-text.py t0 "Auto-Updating..."
     fi
 fi
 if [ "$DISPLAY_VALUE" == "OLED" ] ; then
