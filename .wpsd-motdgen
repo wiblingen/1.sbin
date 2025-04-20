@@ -33,7 +33,7 @@ ${COL_NC}
 ${QUES} Your WPSD dashboard can be accesed from:
     ${BULL} ${COL_LIGHT_MAGENTA}http://$(hostname).local/${COL_NC}
     ${BULL} ${COL_LIGHT_MAGENTA}http://$(hostname)/${COL_NC}
-    ${BULL} ${COL_LIGHT_MAGENTA}http://http://$(hostname -I | awk '{for(i=1;i<=NF;i++) if($i ~ /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ && $i != "127.0.0.1") {print $i; exit}}')/${COL_NC}
+    ${BULL} ${COL_LIGHT_MAGENTA}http://$(hostname -I | awk '{for(i=1;i<=NF;i++) if($i ~ /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ && $i != "127.0.0.1") {print $i; exit}}')/${COL_NC}
 
 ${INFO} WPSD command-line tools are all prefixed with \"wpsd-\".
     Simply type ${BOLD}${COL_BRIGHT_CYAN}wpsd-${COL_NC} and then the TAB key twice to see a list.

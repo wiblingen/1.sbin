@@ -3,7 +3,7 @@
 #
 # (C) 2025, by Andy Taylor MW0MWZ
 #
-# Extended my Chip Cuccio, W0CHP
+# Extended by Chip Cuccio, W0CHP
 #
 # This tool is used to send messages to the OLED screen (when attached)
 # to give some status when the MMDVMHost binary is not running.

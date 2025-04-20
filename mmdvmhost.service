@@ -39,14 +39,6 @@ if [[ ! -e /etc/dstar-radio.mmdvmhost ]]; then
   exit 0
 fi
 
-function ClearDisplay() {
-if [ -e /usr/local/sbin/.wpsd-nextion-text.py ]; then
-    /usr/local/sbin/.wpsd-nextion-text.py -c 2>/dev/null
-fi
-if [ -e /usr/local/sbin/.wpsd-oled-text.py ]; then
-    /usr/local/sbin/.wpsd-oled-text.py -c 2>/dev/null
-fi
-}
 # Verify the logging directory exists, if not create it and setup the ownership / permissions
 if [ ! -d $LOGDIR ]; then
   mkdir -p $LOGDIR
@@ -64,7 +56,6 @@ case "$1" in
 			while ! interface_has_ip; do
 			    sleep 5
 			done
-			ClearDisplay
                         chown -R ${GROUP}:${GROUP} $LOGDIR
                         chmod 775 $LOGDIR
 			sleep 5
@@ -93,7 +84,6 @@ case "$1" in
 			echo -e "Killing $DAEMON PID "`$PGREP $DAEMON`
 			$KILL `${PGREP} ${DAEMON}`
 			$SLEEP 3
-			ClearDisplay
                         chown -R ${GROUP}:${GROUP} $LOGDIR
                         chmod 775 $LOGDIR
 			sleep 5
@@ -106,7 +96,6 @@ case "$1" in
                         chown -R ${GROUP}:${GROUP} $LOGDIR
                         chmod 775 $LOGDIR
 			sleep 5
-			ClearDisplay
 			nice -n -10 ${DAEMON_PATH}${DAEMON} ${DAEMON_OPTS}
 			echo -e "$DAEMON re-started as PID "`${PGREP} ${DAEMON}`
 			(sleep 3s; systemctl restart ircddbgateway)&
