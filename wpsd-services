@@ -77,6 +77,18 @@ function stop_services()
     systemctl stop nextiondriver.service > /dev/null 2>&1
     systemctl stop wpsd-hostfile-update.timer > /dev/null 2>&1
 
+    if [ "$DISPLAY_VALUE" == "Nextion" ] ; then
+        if [ "${OS_VER}" -ge "12" ] ; then
+            /usr/local/sbin/.wpsd-nextion-text.py t1 -c
+            /usr/local/sbin/.wpsd-nextion-text.py t0 "WPSD Services Stopped"
+        fi
+    fi
+    if [ "$DISPLAY_VALUE" == "OLED" ] ; then
+        if [ "${OS_VER}" -ge "12" ] ; then
+            /usr/local/sbin/.wpsd-oled.text.py --text1 "WPSD" --text2 "Services Stopped"
+        fi
+    fi
+
     if [ -t 1 ] ; then
 	echo -e "DONE."
     else
@@ -87,6 +99,18 @@ function stop_services()
 function start_services()
 {
     echo -ne "Starting WPSD services..."
+
+    if [ "$DISPLAY_VALUE" == "Nextion" ] ; then
+        if [ "${OS_VER}" -ge "12" ] ; then
+            /usr/local/sbin/.wpsd-nextion-text.py t1 -c
+            /usr/local/sbin/.wpsd-nextion-text.py t0 "Sarting WPSD..."
+        fi
+    fi
+    if [ "$DISPLAY_VALUE" == "OLED" ] ; then
+        if [ "${OS_VER}" -ge "12" ] ; then
+            /usr/local/sbin/.wpsd-oled.text.py --text1 "WPSD" --text2 "Starting..."
+        fi
+    fi
 
     # dvmega cast-specific stuff
     castResult=$(isDVmegaCast)
