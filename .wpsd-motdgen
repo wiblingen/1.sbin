@@ -38,5 +38,6 @@ ${QUES} Your WPSD dashboard can be accesed from:
 ${INFO} WPSD command-line tools are all prefixed with \"wpsd-\".
     Simply type ${BOLD}${COL_BRIGHT_CYAN}wpsd-${COL_NC} and then the TAB key twice to see a list.
 
+WPSD Project: (C) Chip Cuccio, W0CHP -- Made in Winona, Minn. USA
 ${NOTE} WPSD is Free Software, and comes with ABSOLUTELY NO WARRANTY.${COL_NC}
 " > /etc/motd
