@@ -32,7 +32,7 @@ if [[ ! -f /etc/dstar-radio.mmdvmhost ]]; then
   fi
   if [ -e /usr/local/sbin/.wpsd-oled.text.py ]; then
     /usr/local/sbin/.wpsd-oled.text.py -c 2>/dev/null
-    /usr/local/sbin/.wpsd-oled.text.py "WPSD" "Not Configured Yet" 2>/dev/null
+    /usr/local/sbin/.wpsd-oled.text.py --text1 "WPSD" --text2 "Not Configured Yet" > /dev/null 2>&1
   fi
   exit 0
 fi
