@@ -85,77 +85,66 @@ git_checkUpdateRequired() {
 }
 
 git_update() {
-    # Set the function variables
-    gitFolder=${1}
-    # get proper WPSD dash branch user is running...
+    local gitFolder=${1}
+    local dash_branch
     dash_branch="$( git --git-dir=${gitFolder}/.git symbolic-ref --short HEAD )"
+    local remote_name="origin"
 
-    # get rid of legacy index now that upnp rules are in /etc/wpsd-upnp-rules
-    #if [[ ${gitFolder} == "/usr/local/sbin" ]]; then
-	#git --work-tree=${gitFolder} --git-dir=${gitFolder}/.git update-index --no-assume-unchanged pistar-upnp.service > /dev/null 2>&1
-    #fi
-    if [[ ${gitFolder} == "/usr/local/sbin" ]]; then
-	git --work-tree=${gitFolder} --git-dir=${gitFolder}/.git update-index --assume-unchanged pistar-firewall > /dev/null 2>&1
-    fi
-
-    if [[ $(git_checkUpdateRequired ${gitFolder}) -gt 0 ]]; then
+    if [[ $(git_checkUpdateRequired "${gitFolder}") -gt 0 ]]; then
         echo -e "  ${COL_LIGHT_MAGENTA}${NOTE} Updates found - Installing now..."
-        # WPSD has more than one branch. So depending on what WPSD branch the user has installed, pull that branch.
+
+        local current_dir=$(pwd)
+        cd "${gitFolder}" || { echo "ERROR: Could not cd to ${gitFolder}"; return 1; }
+        trap "cd '${current_dir}'" RETURN
+
+        local target_branch="master"
         if [[ ${gitFolder} == "/var/www/dashboard" ]]; then
-	    cd ${gitFolder}
-	    git stash clear > /dev/null 2>&1 # housekeeping
-	    git reset --hard origin/master > /dev/null 2>&1
-	    git --work-tree=${gitFolder} --git-dir=${gitFolder}/.git pull -q origin ${dash_branch} > /dev/null 2>&1
-	    git reset --hard origin/master > /dev/null 2>&1
-	    git stash clear > /dev/null 2>&1 # housekeeping
-	    echo -e "  ${TICK} Updates installed!"
-	else
-	    if [[ ${gitFolder} == "/usr/local/sbin" ]]; then
-		cd ${gitFolder}
-		git --work-tree=${gitFolder} --git-dir=${gitFolder}/.git fetch > /dev/null 2>&1
-		if [ "$(git --work-tree=${gitFolder} --git-dir=${gitFolder}/.git diff --name-only origin/master 2>/dev/null | grep wpsd-update 2>/dev/null)" = "wpsd-update" ]; then
-		    # New updater version - Self-update and re-exec:
-		    echo -e "\n  ${COL_LIGHT_BLUE}${INFO} New version of the Updater available. Performing self-update..."
-		    git --work-tree=${gitFolder} --git-dir=${gitFolder}/.git pull -q origin master > /dev/null 2>&1
-		    echo -e "  ${TICK} Updates installed!"
-		    if [[ $(git_checkUpdateRequired ${gitFolder}) -gt 0 ]]; then
-			#echo -e "  ${NOTE} Forcing update..."
-			git --work-tree=${gitFolder} --git-dir=${gitFolder}/.git reset --hard origin/master
-			git --work-tree=${gitFolder} --git-dir=${gitFolder}/.git pull -q origin master > /dev/null 2>&1
-		    fi
-		    echo -e "\n  ${COL_LIGHT_BLUE}${INFO} Relaunching Updater with the new version in 3 seconds..."
-		    sleep 4
-		    exec "$0" "$@"
-		    exit 1
-		fi
-	    fi
-            if [[ ${gitFolder} == "/opt/cast" ]]; then # dvmega cast logic
-                git --work-tree=${gitFolder} --git-dir=${gitFolder}/.git reset --hard origin/master > /dev/null 2>&1
-                git --work-tree=${gitFolder} --git-dir=${gitFolder}/.git pull -q origin master > /dev/null 2>&1
-                git --work-tree=${gitFolder} --git-dir=${gitFolder}/.git reset --hard origin/master > /dev/null 2>&1
-	    fi
-	    if [[ ${gitFolder} == "/usr/local/bin" ]]; then
-		# Update the Binaries
-		/usr/local/sbin/wpsd-services fullstop > /dev/null 2>&1
-		process_log_file > /dev/null 2>&1
-		git --work-tree=${gitFolder} --git-dir=${gitFolder}/.git pull -q origin master > /dev/null 2>&1
-		git --work-tree=${gitFolder} --git-dir=${gitFolder}/.git reset --hard origin/master > /dev/null 2>&1
-		/usr/local/sbin/wpsd-services start > /dev/null 2>&1
-	    fi
-	    echo -e "  ${TICK} Updates installed!"
+            target_branch="${dash_branch}"
         fi
-	# Re-check that the updates are now good
-	if [[ $(git_checkUpdateRequired ${gitFolder}) -gt 0 ]]; then
-	    # Updates were not successful, reverting to original files...
-	    # WPSD has more than one branch. So depending on what WPSD branch the user has installed, pull that branch.
-	    if [[ ${gitFolder} == "/var/www/dashboard" ]]; then
-		git --work-tree=${gitFolder} --git-dir=${gitFolder}/.git reset --hard origin/${dash_branch}
-	    else
-		git --work-tree=${gitFolder} --git-dir=${gitFolder}/.git reset --hard origin/master
-	    fi
-	fi
+
+        git stash clear > /dev/null 2>&1
+
+        if [[ ${gitFolder} == "/usr/local/sbin" ]]; then
+            git fetch -q "${remote_name}" master > /dev/null 2>&1
+            if [ "$(git diff --name-only ${remote_name}/master 2>/dev/null | grep -x wpsd-update 2>/dev/null)" = "wpsd-update" ]; then
+                echo -e "\n  ${COL_LIGHT_BLUE}${INFO} New version of the Updater available. Performing self-update..."
+                git reset --hard -q "${remote_name}/master" > /dev/null 2>&1
+                echo -e "  ${TICK} Updates installed!"
+                echo -e "\n  ${COL_LIGHT_BLUE}${INFO} Relaunching Updater with the new version in 3 seconds..."
+                sleep 4
+                exec "$0" "$@"
+                exit 1
+            fi
+            target_branch="master"
+        elif [[ ${gitFolder} == "/usr/local/bin" ]]; then
+            /usr/local/sbin/wpsd-services fullstop > /dev/null 2>&1
+            process_log_file > /dev/null 2>&1
+            target_branch="master"
+        elif [[ ${gitFolder} == "/opt/cast" ]]; then
+             target_branch="master"
+        fi
+
+        #echo -e "  ${COL_LIGHT_MAGENTA}${NOTE} Fetching branch '${target_branch}'..."
+        git fetch -q "${remote_name}" "${target_branch}" > /dev/null 2>&1
+        #echo -e "  ${COL_LIGHT_MAGENTA}${NOTE} Resetting to '${remote_name}/${target_branch}'..."
+        git reset --hard -q "${remote_name}/${target_branch}" > /dev/null 2>&1
+
+        git stash clear > /dev/null 2>&1
+
+        echo -e "  ${TICK} Updates installed!"
+
+        if [[ $(git_checkUpdateRequired "${gitFolder}") -gt 0 ]]; then
+            echo -e "  ${CROSS} Update check failed after attempt, forcing reset again..."
+            git fetch -q "${remote_name}" "${target_branch}" > /dev/null 2>&1
+            git reset --hard -q "${remote_name}/${target_branch}" > /dev/null 2>&1
+        fi
+
+        if [[ ${gitFolder} == "/usr/local/bin" ]]; then
+            /usr/local/sbin/wpsd-services start > /dev/null 2>&1
+        fi
+
     else
-	echo -e "  ${INFO} No updates required."
+        echo -e "  ${INFO} No updates required."
     fi
 }
 
@@ -301,9 +290,11 @@ perform_update() {
 	echo ""
     fi
 
-    echo -e "${BULL} Performing maintenance tasks..."
-
+    echo -e "${BULL} Performing Hostfiles ID & Talkgroup Database Updates..."
     FORCE=1 /usr/local/sbin/wpsd-hostfile-update > /dev/null 2>&1
+    echo -e "  ${TICK} Done!\n" # maint. complete
+    
+    echo -e "${BULL} Performing maintenance tasks..."
 
     # check if user already has firewall disabled, and if so, ensure it's kept that way.
     if [ "$fwState" == "enabled" ]; then
