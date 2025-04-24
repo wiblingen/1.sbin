@@ -22,22 +22,21 @@ source /usr/local/sbin/.wpsd-common-funcs
 # Pre-flight checks...
 test -x ${DAEMON_PATH}${DAEMON} || exit 0
 test -r $CONFIG || exit 0
-test -r /etc/dstar-radio.mmdvmhost || exit 0
-
 # If we're unconfigured, put a message on the displays
 # Thanks Andy!
-if [[ ! -e /etc/dstar-radio.mmdvmhost ]]; then
+if [[ ! -f /etc/dstar-radio.mmdvmhost ]]; then
   if [ -e /usr/local/sbin/.wpsd-nextion-text.py ]; then
     /usr/local/sbin/.wpsd-nextion-text.py -c 2>/dev/null
     /usr/local/sbin/.wpsd-nextion-text.py t0 "WPSD" 2>/dev/null
     /usr/local/sbin/.wpsd-nextion-text.py t2 "Not Configured Yet" 2>/dev/null
   fi
-  if [ -e /usr/local/sbin/.wpsd-oled-text.py ]; then
-    /usr/local/sbin/.wpsd-oled-text.py -c 2>/dev/null
-    /usr/local/sbin/.wpsd-oled-text.py "WPSD" "Not Configured Yet" 2>/dev/null
+  if [ -e /usr/local/sbin/.wpsd-oled.text.py ]; then
+    /usr/local/sbin/.wpsd-oled.text.py -c 2>/dev/null
+    /usr/local/sbin/.wpsd-oled.text.py "WPSD" "Not Configured Yet" 2>/dev/null
   fi
   exit 0
 fi
+test -r /etc/dstar-radio.mmdvmhost || exit 0
 
 # Verify the logging directory exists, if not create it and setup the ownership / permissions
 if [ ! -d $LOGDIR ]; then
