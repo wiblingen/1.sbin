@@ -79,8 +79,8 @@ function stop_services()
 
     if [ "$DISPLAY_VALUE" == "Nextion" ] ; then
         if [ "${OS_VER}" -ge "12" ] ; then
-            /usr/local/sbin/.wpsd-nextion-text.py t1 -c > /dev/null 2>&1
-            /usr/local/sbin/.wpsd-nextion-text.py t0 "WPSD Services Stopped" > /dev/null 2>&1
+            /usr/local/sbin/.wpsd-nextion-text.py -c > /dev/null 2>&1
+            /usr/local/sbin/.wpsd-nextion-text.py t0 "Services Stopped" > /dev/null 2>&1
         fi
     fi
     if [ "$DISPLAY_VALUE" == "OLED" ] ; then
