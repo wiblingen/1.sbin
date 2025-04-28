@@ -103,7 +103,7 @@ function start_services()
     if [ "$DISPLAY_VALUE" == "Nextion" ] ; then
         if [ "${OS_VER}" -ge "12" ] ; then
             /usr/local/sbin/.wpsd-nextion-text.py -c > /dev/null 2>&1
-            /usr/local/sbin/.wpsd-nextion-text.py t0 "Sarting WPSD..." > /dev/null 2>&1
+            /usr/local/sbin/.wpsd-nextion-text.py t0 "Starting WPSD..." > /dev/null 2>&1
         fi
     fi
     if [ "$DISPLAY_VALUE" == "OLED" ] ; then
