@@ -41,7 +41,7 @@ fi
 # connectivity check
 conn_check
 if $connection_established; then
-    echo "WPSD Hostfile Update Server connection OK...updating hostfiles."
+    echo "WPSD Hostfile Update Server connection OK...downloading hostfiles."
 else
     echo "WPSD Hostfile Update Server connection failed."
     exit 1
@@ -55,6 +55,7 @@ rm -rf /usr/local/etc/tmp/hostfile-checksums
 curl --fail -L -o /tmp/hostfile-checksums -s ${hostFileURL}/hostfile-checksums --user-agent "${ProgVer}"
 curl --fail -L -o /usr/local/etc/tmp/wpsd-hostfiles.tar.bz2 -s ${hostFileURL}/wpsd-hostfiles.tar.bz2 --user-agent "${ProgVer}"
 
+echo "Checking file integrities..."
 tar jxf /usr/local/etc/tmp/wpsd-hostfiles.tar.bz2 -C /usr/local/etc/tmp/
 
 checksum_file="/tmp/hostfile-checksums"
@@ -70,7 +71,7 @@ while IFS=" " read -r expected_checksum filename; do
         exit 1
     fi
 done < "$checksum_file"
-echo "Hostfile checksums ok. Moving updated files into place..."
+echo "Hostfile checksums OK. Updating with new hostfiles..."
 
 DExtraHOSTS=/usr/local/etc/tmp/DExtra_Hosts.txt
 DMRIDFILE=/usr/local/etc/tmp/DMRIds.dat
