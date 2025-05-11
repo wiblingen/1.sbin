@@ -23,10 +23,10 @@ if [ "$OptIntoDiags_value" != 'true' ] ; then
     exit 1
 fi
 
-# check age of task marker file if it exists, and if it's < 8 hours young, bail.
+# check age of task marker file if it exists, and if it's < N hours young, bail.
 if [[ ${FORCE} -ne 1 ]] ; then # please be thoughtful here. This env. var. is called by a few places in the admin pages.
-    if [  -f '/var/run/hostfiles-up' ] && [ "$(( $(date +"%s") - $(stat -c "%Y" "/var/run/hostfiles-up") ))" -lt "28800" ]; then
-	echo "Hostfles are less than 8 hours old. Not updating."
+    if [  -f '/var/run/hostfiles-up' ] && [ "$(( $(date +"%s") - $(stat -c "%Y" "/var/run/hostfiles-up") ))" -lt "9000" ]; then
+	echo "Hostfles are less than 2.5 hours old. Not updating."
 	echo "To force an update, run 'sudo FORCE=1 $(basename "$0")'"
 	exit 0
     fi
