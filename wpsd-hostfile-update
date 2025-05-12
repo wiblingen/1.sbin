@@ -6,285 +6,198 @@
 #                                                     #
 #######################################################
 
-# --- Configuration ---
-script_name=$(basename "$0")
-required_uid=0
-update_marker_file="/var/run/hostfiles-up"
-update_interval_seconds=9000 # 2.5 hours
-lock_file="/var/lock/wpsd-hostfiles.lock"
-temp_dir="/usr/local/etc/tmp"
-install_dir="/usr/local/etc"
-checksum_file_remote="hostfile-checksums"
-hostfiles_archive_remote="wpsd-hostfiles.tar.bz2"
-dmr_id_temp_file="${temp_dir}/user.csv.tmp"
-dmr_id_final_file="${install_dir}/user.csv"
-stripped_file="${install_dir}/stripped.csv"
-groups_file="${install_dir}/groups.txt"
-
-# --- Optional Override Files ---
-dmr_hosts_override="/root/DMR_Hosts.txt"
-ysf_hosts_override="/root/YSFHosts.txt"
-p25_hosts_override="/root/P25Hosts.txt"
-m17_hosts_override="/root/M17Hosts.txt"
-nxdn_hosts_override="/root/NXDNHosts.txt"
-nxdn_hosts_local="${install_dir}/NXDNHostsLocal.txt"
-xlx_hosts_override="/root/XLXHosts.txt"
-
-# --- Temporary Files (within temp_dir) ---
-checksums_local="${temp_dir}/hostfile-checksums"
-hostfiles_archive_local="${temp_dir}/wpsd-hostfiles.tar.bz2"
-extracted_base="${temp_dir}"
-dextra_hosts_temp="${temp_dir}/DExtra_Hosts.txt"
-dmr_id_archive_temp="${temp_dir}/DMRIds.dat.bz2"
-dmr_id_raw_temp="${temp_dir}/DMRIds.dat"
-dmr_hosts_temp="${temp_dir}/DMR_Hosts.txt"
-dplus_hosts_temp="${temp_dir}/DPlus_Hosts.txt"
-m17_hosts_temp="${temp_dir}/M17Hosts.txt"
-ysf_hosts_temp="${temp_dir}/YSFHosts.txt"
-xlx_hosts_temp="${temp_dir}/XLXHosts.txt"
-bm_tgs_temp="${temp_dir}/BM_TGs.json"
-
-# --- Version and Diagnostics ---
-prog_ver="WPSD-HostFileUpdater v4.5"
-opt_into_diags="${OptIntoDiags_value:-true}"
-
-# --- Functions ---
-source /usr/local/sbin/.wpsd-common-funcs || {
-    echo "Error: Could not source common functions. Exiting."
+# Check if we are root
+if [ "$(id -u)" != "0" ];then
+    echo "This script must be run as root" 1>&2
     exit 1
-}
+fi
 
-check_root() {
-    if [ "$(id -u)" -ne "$required_uid" ]; then
-        echo "Error: This script must be run as root" 1>&2
-        exit 1
+source /usr/local/sbin/.wpsd-common-funcs
+
+ProgVer="WPSD-HostFileUpdater v4.5"
+
+OptIntoDiags_value=${OptIntoDiags_value:-true}
+
+if [ "$OptIntoDiags_value" != 'true' ] ; then
+    echo "User has opted out of updates and diagnostics. Exiting..."
+    exit 1
+fi
+
+# check age of task marker file if it exists, and if it's < N hours young, bail.
+if [[ ${FORCE} -ne 1 ]] ; then # please be thoughtful here. This env. var. is called by a few places in the admin pages.
+    if [  -f '/var/run/hostfiles-up' ] && [ "$(( $(date +"%s") - $(stat -c "%Y" "/var/run/hostfiles-up") ))" -lt "9000" ]; then
+	echo "Hostfles are less than 2.5 hours old. Not updating."
+	echo "To force an update, run 'sudo FORCE=1 $(basename "$0")'"
+	exit 0
     fi
-}
+fi
 
-check_opt_in() {
-    if [ "$opt_into_diags" != 'true' ]; then
-        echo "User has opted out of updates and diagnostics. Exiting..."
-        exit 1
-    fi
-}
+exec 200>/var/lock/wpsd-hostfiles.lock || exit 1 # only one exec per time
+if ! flock -n 200 ; then
+  echo "Process already running"
+  exit 1
+fi
 
-check_update_age() {
-    if [[ -f "$update_marker_file" && "$FORCE" -ne 1 ]]; then
-        local age_seconds="$(( $(date +"%s") - $(stat -c "%Y" "$update_marker_file") ))"
-        if [ "$age_seconds" -lt "$update_interval_seconds" ]; then
-            echo "Hostfiles are less than $((update_interval_seconds / 3600)).$(((update_interval_seconds % 3600) / 60)) hours old. Not updating."
-            echo "To force an update, run 'sudo FORCE=1 $script_name'"
-            exit 0
-        fi
-    fi
-}
-
-acquire_lock() {
-    exec 200>"$lock_file" || exit 1
-    if ! flock -n 200; then
-        echo "Error: Process already running"
-        exit 1
-    fi
-}
-
-download_file() {
-    local remote_url="$1"
-    local local_path="$2"
-    echo "Downloading $remote_url to $local_path..."
-    curl --fail -L -o "$local_path" -s "$remote_url" --user-agent "$prog_ver"
-    if [ $? -ne 0 ]; then
-        echo "Error downloading $remote_url"
-        exit 1
-    fi
-}
-
-verify_checksums() {
-    echo "Checking file integrities..."
-    local checksum_file="$1"
-    while IFS=" " read -r expected_checksum filename; do
-        local full_path="${extracted_base}/${filename}"
-        if [[ ! -f "$full_path" ]]; then
-            echo "Error: File $filename not found in $extracted_base"
-            exit 1
-        fi
-        local actual_checksum=$(sha256sum "$full_path" | awk '{print $1}')
-        if [[ "$actual_checksum" != "$expected_checksum" ]]; then
-            echo "Error: Checksum mismatch for $filename"
-            echo "  Expected: $expected_checksum"
-            echo "  Actual:   $actual_checksum"
-            exit 1
-        fi
-    done < "$checksum_file"
-    echo "Hostfile checksums OK."
-}
-
-handle_dmr_ids() {
-    echo "Processing DMR IDs..."
-    mv "$dmr_id_archive_temp" /tmp/
-    bunzip2 -f "/tmp/DMRIds.dat.bz2"
-    cat "/tmp/DMRIds.dat" 2>/dev/null |
-        grep -v '^#' |
-        awk '($1 > 999999) && ($1 < 10000000) { print $0 }' |
-        sort -un -k1n -o "$dmr_id_final_file"
-    rm -f "/tmp/DMRIds.dat"
-}
-
-handle_xlx_overrides() {
-    if [ -f "$xlx_hosts_override" ]; then
-        echo "Processing XLX overrides..."
-        while IFS= read -r line; do
-            if [[ "$line" != \#* && "$line" == *";"* ]]; then
-                local xlxid=$(echo "$line" | awk -F ';' '{print $1}')
-                local xlxip=$(echo "$line" | awk -F ';' '{print $2}')
-                local xlxroom=$(echo "$line" | awk -F ';' '{print $3}')
-                local xlxNewLine="${xlxid};${xlxip};${xlxroom}"
-
-                if grep -q "^${xlxid};" "$xlx_hosts_temp"; then
-                    sed -i "s/^${xlxid};.*/${xlxNewLine}/" "$xlx_hosts_temp"
-                else
-                    echo "$xlxNewLine" >> "$xlx_hosts_temp"
-                fi
-            fi
-        done < "$xlx_hosts_override"
-        sort -o "$xlx_hosts_temp" -t ';' -k1,1 "$xlx_hosts_temp"
-    fi
-}
-
-commit_files() {
-    echo "Updating with new hostfiles..."
-    rm -rf "$temp_dir"/*.bz2
-    mv "$temp_dir"/* "$install_dir"/
-    rm -rf "$stripped_file"
-    rm -rf "${install_dir}/stripped.csv"
-    ln -s "${install_dir}/user.csv" "${install_dir}/stripped.csv"
-    rm -rf "${install_dir}/"*20[2-9][0-9]*
-    rm -rf "${install_dir}/sed*"
-    touch "$update_marker_file"
-}
-
-cleanup_temp() {
-    rm -rf "$temp_dir/$checksum_file_remote"
-}
-
-remove_old_stripped_files() {
-    local pattern="${install_dir}/stripped.csv.*"
-    local files=("$pattern")
-    if [ "${#files[@]}" -gt 0 ]; then
-        for file in "${files[@]}"; do
-            rm -f "$file"
-        done
-    fi
-}
-
-# --- Main Script ---
-check_root
-check_opt_in
-check_update_age
-acquire_lock
-
-# Connectivity Check
+# connectivity check
 conn_check
-if ! "$connection_established"; then
-    echo "Error: WPSD Hostfile Update Server connection failed."
+if $connection_established; then
+    echo "WPSD Hostfile Update Server connection OK...downloading hostfiles."
+else
+    echo "WPSD Hostfile Update Server connection failed."
     exit 1
 fi
-echo "WPSD Hostfile Update Server connection OK...downloading hostfiles."
 
-# Create temporary directory if it doesn't exist
-mkdir -p "$temp_dir"
+if [ ! -d /usr/local/etc/tmp ]; then
+    mkdir -p /usr/local/etc/tmp
+fi
+rm -rf /usr/local/etc/tmp/hostfile-checksums
 
-# Download checksum and hostfiles archive
-download_file "${hostFileURL}/${checksum_file_remote}" "$checksums_local"
-download_file "${hostFileURL}/${hostfiles_archive_remote}" "$hostfiles_archive_local"
+curl --fail -L -o /tmp/hostfile-checksums -s ${hostFileURL}/hostfile-checksums --user-agent "${ProgVer}"
+curl --fail -L -o /usr/local/etc/tmp/wpsd-hostfiles.tar.bz2 -s ${hostFileURL}/wpsd-hostfiles.tar.bz2 --user-agent "${ProgVer}"
 
-# Extract archive
-echo "Extracting hostfiles..."
-tar jxf "$hostfiles_archive_local" -C "$extracted_base"
+echo "Checking file integrities..."
+tar jxf /usr/local/etc/tmp/wpsd-hostfiles.tar.bz2 -C /usr/local/etc/tmp/
 
-# Verify checksums
-verify_checksums "$checksums_local"
+checksum_file="/tmp/hostfile-checksums"
+base_dir="/usr/local/etc/tmp"
+while IFS=" " read -r expected_checksum filename; do
+    if [[ ! -f "$base_dir/$filename" ]]; then
+        echo "File $filename not found in $base_dir"
+        exit 1
+    fi
+    actual_checksum=$(sha256sum "$base_dir/$filename" | awk '{print $1}')
+    if [[ "$actual_checksum" != "$expected_checksum" ]]; then
+        echo "Checksum mismatch for $filename"
+        exit 1
+    fi
+done < "$checksum_file"
+echo "Hostfile checksums OK. Updating with new hostfiles..."
 
-# Handle DExtra Hosts based on /etc/hostfiles.nodextra
-if [ -f "/etc/hostfiles.nodextra" ]; then
-    echo "Moving XRF hosts to DPlus and non-XRF to DExtra..."
-    mv "${extracted_base}/DPlus_WithXRF_Hosts.txt" "$dplus_hosts_temp"
-    mv "${extracted_base}/DExtra_NoXRF_Hosts.txt" "$dextra_hosts_temp"
+DExtraHOSTS=/usr/local/etc/tmp/DExtra_Hosts.txt
+DMRIDFILE=/usr/local/etc/tmp/DMRIds.dat
+DMRHOSTS=/usr/local/etc/tmp/DMR_Hosts.txt
+DPlusHOSTS=/usr/local/etc/tmp/DPlus_Hosts.txt
+M17HOSTS=/usr/local/etc/tmp/M17Hosts.txt
+YSFHOSTS=/usr/local/etc/tmp/YSFHosts.txt
+XLXHOSTS=/usr/local/etc/tmp/XLXHosts.txt
+BMTGNAMES=/usr/local/etc/tmp/BM_TGs.json
+RADIOIDDB_TMP=/usr/local/etc/tmp/user.csv.tmp
+RADIOIDDB=/usr/local/etc/tmp/user.csv
+GROUPSTXT=/usr/local/etc/tmp/groups.txt
+STRIPPED=/usr/local/etc/tmp/stripped.csv
+
+if [ -f /etc/hostfiles.nodextra ]; then
+  # Move XRFs to DPlus Protocol
+  mv /usr/local/etc/tmp/DPlus_WithXRF_Hosts.txt ${DPlusHOSTS}
+  mv /usr/local/etc/tmp/DExtra_NoXRF_Hosts.txt ${DExtraHOSTS}
 fi
 
-# Get and process DMR IDs
-handle_dmr_ids
+# Get DMR IDs
+mv ${DMRIDFILE}.bz2 /tmp/
+bunzip2 -f /tmp/DMRIds.dat.bz2
+# filter out IDs less than 7 digits (causing collisions with TGs of < 7 digits in "Target" column"
+cat /tmp/DMRIds.dat  2>/dev/null | grep -v '^#' | awk '($1 > 999999) && ($1 < 10000000) { print $0 }' | sort -un -k1n -o ${DMRIDFILE}
+rm -f /tmp/DMRIds.dat
 
-# BM TG List
-cp "$extracted_base/BM_TGs.json" "$groups_file"
+# BM TG List for live caller and (legacy) nextion screens:
+cp ${BMTGNAMES} ${GROUPSTXT}
 
-# Add DMR Hosts override
-if [ -f "$dmr_hosts_override" ]; then
-    echo "Appending custom DMR hosts..."
-    cat "$dmr_hosts_override" >> "$dmr_hosts_temp"
+# If there is a DMR override file, add its contents to DMR_Hosts.txt
+if [ -f "/root/DMR_Hosts.txt" ]; then
+	cat /root/DMR_Hosts.txt >> ${DMRHOSTS}
 fi
 
 # Add custom YSF Hosts
-if [ -f "$ysf_hosts_override" ]; then
-    echo "Appending custom YSF hosts..."
-    cat "$ysf_hosts_override" >> "$ysf_hosts_temp"
+if [ -f "/root/YSFHosts.txt" ]; then
+	cat /root/YSFHosts.txt >> ${YSFHOSTS}
 fi
 
 # Fix DMRGateway issues with parens
 if [ -f "/etc/dmrgateway" ]; then
-    #echo "Fixing DMRGateway config..."
-    sed -i '/Name=.*(/d' /etc/dmrgateway
-    sed -i '/Name=.*)/d' /etc/dmrgateway
+	sed -i '/Name=.*(/d' /etc/dmrgateway
+	sed -i '/Name=.*)/d' /etc/dmrgateway
 fi
 
 # Add custom P25 Hosts
-if [ -f "$p25_hosts_override" ]; then
-    echo "Copying custom P25 hosts..."
-    cat "$p25_hosts_override" > "${install_dir}/P25HostsLocal.txt"
+if [ -f "/root/P25Hosts.txt" ]; then
+	cat /root/P25Hosts.txt > /usr/local/etc/P25HostsLocal.txt
 fi
 
 # Add local override for M17Hosts
-if [ -f "$m17_hosts_override" ]; then
-    echo "Appending custom M17 hosts..."
-    cat "$m17_hosts_override" >> "$m17_hosts_temp"
+if [ -f "/root/M17Hosts.txt" ]; then
+	cat /root/M17Hosts.txt >> ${M17HOSTS}
 fi
 
-# Handle NXDN Hosts
-if [ ! -f "$nxdn_hosts_override" ]; then
-    touch "$nxdn_hosts_override"
+# Fix up new NXDNGateway Config HostFile setup
+if [ ! -f "/root/NXDNHosts.txt" ]; then
+	touch /root/NXDNHosts.txt
 fi
-if [ ! -f "$nxdn_hosts_local" ]; then
-    touch "$nxdn_hosts_local"
-fi
-if [ -f "$nxdn_hosts_override" ]; then
-    echo "Copying custom NXDN hosts..."
-    cat "$nxdn_hosts_override" > "$nxdn_hosts_local"
+if [ ! -f "/usr/local/etc/NXDNHostsLocal.txt" ]; then
+	touch /usr/local/etc/NXDNHostsLocal.txt
 fi
 
-# Handle XLX overrides
-handle_xlx_overrides
+# Add custom NXDN Hosts
+if [ -f "/root/NXDNHosts.txt" ]; then
+	cat /root/NXDNHosts.txt > /usr/local/etc/NXDNHostsLocal.txt
+fi
 
-# Nextion and LiveCaller DMR ID DB cleanup and link
-echo "Finalizing DMR ID database..."
-mv "$dmr_id_final_file" "$dmr_id_temp_file"
-cat "$dmr_id_temp_file" | sort -un -k1n -o "$dmr_id_final_file"
-rm -f "$dmr_id_temp_file"
-sed -i '1d' "$dmr_id_final_file"
-rm -rf "$stripped_file"
-rm -rf "${install_dir}/stripped.csv"
-ln -s "${install_dir}/user.csv" "${install_dir}/stripped.csv"
+# XLX override handling
+if [ -f "/root/XLXHosts.txt" ]; then
+    while IFS= read -r line; do
+        if [[ $line != \#* && $line = *";"* ]]; then
+            xlxid=$(echo "$line" | awk -F ';' '{print $1}')
+            xlxip=$(echo "$line" | awk -F ';' '{print $2}')
+            xlxroom=$(echo "$line" | awk -F ';' '{print $3}')
+            xlxNewLine="${xlxid};${xlxip};${xlxroom}"
+            
+            if grep -q "^${xlxid};" ${XLXHOSTS}; then
+                sed -i "s/^${xlxid};.*/${xlxNewLine}/" ${XLXHOSTS}
+            else
+                echo "$xlxNewLine" >> ${XLXHOSTS}
+            fi
+        fi
+    done < "/root/XLXHosts.txt"
+    sort -o ${XLXHOSTS} -t ';' -k1,1 ${XLXHOSTS}
+fi
 
-# Commit all files
-commit_files
+# Nextion and LiveCaller DMR ID DB's
+bunzip2 -f ${RADIOIDDB}.bz2
+mv $RADIOIDDB $RADIOIDDB_TMP
+# sort
+cat ${RADIOIDDB_TMP} | sort -un -k1n -o ${RADIOIDDB}
+rm -f $RADIOIDDB_TMP
+# remove header
+sed -i '1d' ${RADIOIDDB}
 
-# Cleanup temporary files
-cleanup_temp
-remove_old_stripped_files
+# commit!
+rm -rf /usr/local/etc/tmp/*bz2
+mv /usr/local/etc/tmp/* /usr/local/etc/
+# make link for legacy nextion configs
+rm -rf ${STRIPPED}
+rm -rf /usr/local/etc/stripped.csv
+ln -s /usr/local/etc/user.csv /usr/local/etc/stripped.csv
 
-# Final output
-if [ -t 1 ]; then
+rm -rf /usr/local/etc/*2023*
+rm -rf /usr/local/etc/*2024*
+rm -rf /usr/local/etc/*2025*
+rm -rf /usr/local/etc/sed*
+
+touch /var/run/hostfiles-up # create/reset marker
+
+if [ -t 1 ] ; then
     echo -e "DONE."
 else
     echo -e "* DONE *"
 fi
 
+pattern="/usr/local/etc/stripped.csv.*"
+files=($pattern)
+if [ ${#files[@]} -gt 0 ]; then
+  for file in "${files[@]}"; do
+     rm -f "$file"
+  done
+fi
+
+rm -rf /usr/local/etc/tmp/hostfile-checksums
 exit 0
+
