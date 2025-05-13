@@ -131,8 +131,6 @@ git_update() {
 
         git stash clear > /dev/null 2>&1
 
-        echo -e "  ${TICK} Updates installed!"
-
         if [[ $(git_checkUpdateRequired "${gitFolder}") -gt 0 ]]; then
             echo -e "  ${CROSS} Update check failed after attempt, forcing reset again..."
             git fetch -q "${remote_name}" "${target_branch}" > /dev/null 2>&1
@@ -143,6 +141,7 @@ git_update() {
             /usr/local/sbin/wpsd-services start > /dev/null 2>&1
         fi
 
+        echo -e "  ${TICK} Updates installed!"
     else
         echo -e "  ${INFO} No updates required."
     fi
@@ -233,6 +232,11 @@ perform_update() {
     git_update /var/www/dashboard
     echo ""
 
+    echo -e "${BULL} Updating Hostfiles, ID & Talkgroup Databases..."
+    FORCE=1 /usr/local/sbin/wpsd-hostfile-update > /dev/null 2>&1
+    echo -e "  ${TICK} Done!"
+    echo ""
+
     echo -e "${BULL} Updating WPSD Digital Voice-Related Binaries..."
     git_update /usr/local/bin
     echo ""
@@ -290,9 +294,7 @@ perform_update() {
 	echo ""
     fi
 
-    echo -e "${BULL} Performing Hostfiles ID & Talkgroup Database Updates..."
-    FORCE=1 /usr/local/sbin/wpsd-hostfile-update > /dev/null 2>&1
-    echo -e "  ${TICK} Done!\n" # maint. complete
+    echo -e "  ${TICK} Done!\n" # updates. complete
     
     echo -e "${BULL} Performing maintenance tasks..."
 
