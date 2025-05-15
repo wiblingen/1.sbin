@@ -294,7 +294,7 @@ perform_update() {
 	echo ""
     fi
 
-    echo -e "  ${TICK} Done!\n" # updates. complete
+    #echo -e "  ${TICK} Done!\n" # updates. complete
     
     echo -e "${BULL} Performing maintenance tasks..."
 
