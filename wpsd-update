@@ -209,7 +209,7 @@ perform_update() {
 	    sed -i '\/PIDFile=\/run\/nginx.pid/a ExecStartPre=\/bin\/mkdir -p \/var\/log\/nginx' /lib/systemd/system/nginx.service
 	    systemctl daemon-reload
 	    systemctl restart nginx.service
-	    echo -e "  ${NOTE} ${COL_LIGHT_YELLOW}Note:${COL_NC} Web server configuration has been updated by operating system; restarting update..."
+	    #echo -e "  ${NOTE} ${COL_LIGHT_YELLOW}Note:${COL_NC} Web server configuration has been updated by operating system; restarting update..."
 	    exec "$0" "$@"
 	    exit 1
 	fi

@@ -119,7 +119,7 @@ if [[ ${modelName} == "arm"* ]] || [[ ${modelName} == "aarch"* ]]; then
 	echo "Samsung Artik"
     elif [[ ${raspberryModel} == "Raspberry"* ]]; then
 	raspberryModel=$(echo $raspberryModel) 
-	echo "${raspberryModel} ${arch} ${raspberryVer} - Revision # $boardRev"
+	echo "${raspberryModel} ${arch} ${raspberryVer} - Rev.# $boardRev"
     else
 	echo "$actualModel $arch $raspberryVer"
     fi
