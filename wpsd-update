@@ -160,7 +160,7 @@ term_banner() {
 perform_update() {
     if [ -t 1 ]; then
     # This is running from a terminal, so it should be safe to update the OS
-	if [ "$1" == "os" ]; then
+	if [[ "$1" == "os" || "$1" == "all" ]]; then
 	    echo -e "\n${BULL} Checking for any available operating system updates."
 	    echo -e "  Please wait...\n"
 	    apt-get -q=2 update
@@ -175,7 +175,14 @@ perform_update() {
 	    else
 		echo -e "  ${INFO} No operating system updates required.\n"
 	    fi
-	    exit 0
+	    if [ "$1" == "os" ]; then 
+	    echo -e "${BULL} ${COL_LIGHT_BLUE}${INFO} WPSD is ${BOLD}not${COL_NC} updated by using ${COL_LIGHT_BLUE}${BOLD}sudo wpsd-update os${COL_NC}"
+	    echo -e "      To check for and install WPSD updates, run this"
+	    echo -e "      program again as: '${COL_LIGHT_BLUE}${BOLD}sudo wpsd-update${COL_NC}'"
+	    echo -e "      To check for and install WPSD and OS updates, run this"
+	    echo -e "      program again as: '${COL_LIGHT_BLUE}${BOLD}sudo wpsd-update all${COL_NC}'\n"
+           exit 0
+        fi
 	fi
     fi
 
@@ -343,10 +350,12 @@ perform_update() {
 
     if [ -t 1 ]; then
     # This is running from a terminal, so it should be safe to update the OS
-	if [ "$1" != "os" ]; then
+	if [[ "$1" != "os" && "$1" != "all" ]]; then
 	    echo -e "${BULL} ${COL_LIGHT_BLUE}${INFO} Operating system is ${BOLD}not${COL_NC} updated by default..."
 	    echo -e "      To check for and install OS updates, run this"
-	    echo -e "      program again as: '${COL_LIGHT_BLUE}${BOLD}sudo wpsd-update os${COL_NC}'\n"
+	    echo -e "      program again as: '${COL_LIGHT_BLUE}${BOLD}sudo wpsd-update os${COL_NC}'"
+	    echo -e "      To check for and install WPSD and OS updates, run this"
+	    echo -e "      program again as: '${COL_LIGHT_BLUE}${BOLD}sudo wpsd-update all${COL_NC}'\n"
 	fi
     fi
 
