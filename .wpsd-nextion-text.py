@@ -50,7 +50,7 @@ def get_display_port():
     # Final substitution: if it's set to "modem", look up the real port
     if displayPort == "modem":
         try:
-            modem_port = config.get('Modem', 'Port').strip()
+            modem_port = config.get('Modem', 'UARTPort').strip()
             if modem_port:
                 displayPort = modem_port
         except (configparser.NoSectionError, configparser.NoOptionError):
