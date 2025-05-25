@@ -49,12 +49,6 @@ else
         /usr/bin/killall NextionDriver > /dev/null 2>&1
         systemctl disable nextiondriver.service > /dev/null 2>&1
 	systemctl disable nextiondriver-shutdown.timer > /dev/null 2>&1
-	if [ "${OS_VER}" -ge "12" ] ; then
- 	    systemctl disable wpsd-nx-bootup.service > /dev/null 2>&1
-	    systemctl disable wpsd-nx-reboot.service > /dev/null 2>&1
-	    systemctl disable wpsd-nx-shutdown.service > /dev/null 2>&1
-	    systemctl disable wpsd-nx-preshutdown.service > /dev/null 2>&1
-	fi
     fi
 fi
 
@@ -65,13 +59,6 @@ if [ "$DISPLAY_VALUE" == "OLED" ] ; then
 	systemctl enable wpsd-oled-reboot.service > /dev/null 2>&1
 	systemctl enable wpsd-oled-shutdown.service > /dev/null 2>&1
 	systemctl enable wpsd-oled-preshutdown.service > /dev/null 2>&1
-    fi
-else
-    if [ "${OS_VER}" -ge "12" ] ; then
-	systemctl disable wpsd-oled-bootup.service > /dev/null 2>&1
-	systemctl disable wpsd-oled-reboot.service > /dev/null 2>&1
-	systemctl disable wpsd-oled-shutdown.service > /dev/null 2>&1
-	systemctl disable wpsd-oled-preshutdown.service > /dev/null 2>&1
     fi
 fi
 
