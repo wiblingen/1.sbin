@@ -28,7 +28,7 @@ if [[ ! -f /etc/dstar-radio.mmdvmhost ]]; then
   if [ -e /usr/local/sbin/.wpsd-nextion-text.py ]; then
     /usr/local/sbin/.wpsd-nextion-text.py -c 2>/dev/null
     /usr/local/sbin/.wpsd-nextion-text.py t0 "WPSD" 2>/dev/null
-    /usr/local/sbin/.wpsd-nextion-text.py t2 "Not Configured Yet" 2>/dev/null
+    /usr/local/sbin/.wpsd-nextion-text.py t1 "Not Configured Yet" 2>/dev/null
   fi
   if [ -e /usr/local/sbin/.wpsd-oled.text.py ]; then
     /usr/local/sbin/.wpsd-oled.text.py -c 2>/dev/null
