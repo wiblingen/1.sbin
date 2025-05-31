@@ -132,7 +132,7 @@ git_update() {
         git stash clear > /dev/null 2>&1
 
         if [[ $(git_checkUpdateRequired "${gitFolder}") -gt 0 ]]; then
-            echo -e "  ${CROSS} Update check failed after attempt, forcing reset again..."
+            #echo -e "  ${CROSS} Update check failed after attempt, forcing reset again..."
             git fetch -q "${remote_name}" "${target_branch}" > /dev/null 2>&1
             git reset --hard -q "${remote_name}/${target_branch}" > /dev/null 2>&1
         fi

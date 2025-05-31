@@ -10,22 +10,22 @@ fi
 
 source /usr/local/sbin/.wpsd-common-funcs
 
-sudo wpsd-services fullstop
+wpsd-services fullstop
 
-sudo rm -rf /usr/local/sbin
-sudo GIT_HTTP_CONNECT_TIMEOUT="10" GIT_HTTP_USER_AGENT="WPSD sbin reset (client-side)" git clone --depth 1 https://wpsd-swd.w0chp.net/WPSD-SWD/WPSD-Scripts.git /usr/local/sbin
+rm -rf /usr/local/sbin
+GIT_HTTP_CONNECT_TIMEOUT="10" GIT_HTTP_USER_AGENT="WPSD sbin reset (client-side)" git clone --depth 1 https://wpsd-swd.w0chp.net/WPSD-SWD/WPSD-Scripts.git /usr/local/sbin
 
-sudo rm -rf /usr/local/bin
-sudo GIT_HTTP_CONNECT_TIMEOUT="10" GIT_HTTP_USER_AGENT="WPSD binary reset (client-side)" git clone --depth 1 https://wpsd-swd.w0chp.net/WPSD-SWD/WPSD-Binaries.git /usr/local/bin
+rm -rf /usr/local/bin
+GIT_HTTP_CONNECT_TIMEOUT="10" GIT_HTTP_USER_AGENT="WPSD binary reset (client-side)" git clone --depth 1 https://wpsd-swd.w0chp.net/WPSD-SWD/WPSD-Binaries.git /usr/local/bin
 
 if [ "$fwState" == "enabled" ]; then
-    sudo /usr/local/sbin/wpsd-system-manager -efw
+    /usr/local/sbin/wpsd-system-manager -efw
 else
-    sudo /usr/local/sbin/wpsd-system-manager -dfw
+    /usr/local/sbin/wpsd-system-manager -dfw
 fi
 
-sudo rm -rf /var/www/dashboard
-sudo GIT_HTTP_CONNECT_TIMEOUT="10" GIT_HTTP_USER_AGENT="WPSD webcode reset (client-side)" git clone --depth 1 https://wpsd-swd.w0chp.net/WPSD-SWD/WPSD-WebCode.git /var/www/dashboard
+rm -rf /var/www/dashboard
+GIT_HTTP_CONNECT_TIMEOUT="10" GIT_HTTP_USER_AGENT="WPSD webcode reset (client-side)" git clone --depth 1 https://wpsd-swd.w0chp.net/WPSD-SWD/WPSD-WebCode.git /var/www/dashboard
 
 # dvmega cast-specific stuff
 castResult=$(isDVmegaCast)
@@ -61,20 +61,20 @@ if [ "$castResult" == "true" ]; then
     chown -R www-data:www-data /opt/cast/usr-local-cast-www
 fi
 
-sudo systemctl unmask cron
-sudo systemctl enable cron
-sudo systemctl start cron
+systemctl unmask cron
+systemctl enable cron
+systemctl start cron
 
-sudo rm -rf /etc/WPSD-release ; sudo touch /etc/WPSD-release
+rm -rf /etc/WPSD-release ; touch /etc/WPSD-release
 
-sudo wpsd-services start
+wpsd-services start
 
-sudo /usr/local/sbin/.wpsd-slipstream-tasks
-sudo /usr/local/sbin/.wpsd-sys-cache
+/usr/local/sbin/.wpsd-slipstream-tasks
+/usr/local/sbin/.wpsd-sys-cache
 
-sudo systemctl restart wpsd-nightly-tasks.timer
-sudo systemctl restart wpsd-running-tasks.timer
-sudo systemctl restart wpsd-running-tasks.service
+systemctl restart wpsd-nightly-tasks.timer
+systemctl restart wpsd-running-tasks.timer
+systemctl restart wpsd-running-tasks.service
 
 echo "WPSD has been reset/reinstalled."
 
