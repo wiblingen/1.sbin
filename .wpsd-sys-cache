@@ -193,7 +193,6 @@ else
     done
 fi
 
-# Continue with the rest of your script here...
 # Extract the modem name and version directly from the description
 # Handle DVMEGA format
 if [[ "$LOG_LINE" =~ description:\ (DVMEGA\ ([^ ]+)) ]]; then
