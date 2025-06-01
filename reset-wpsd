@@ -72,7 +72,7 @@ rm -rf /etc/WPSD-release ; touch /etc/WPSD-release
 wpsd-services start
 
 /usr/local/sbin/.wpsd-slipstream-tasks
-/usr/local/sbin/.wpsd-sys-cache
+NO_LOG_PROC=1 /usr/local/sbin/.wpsd-sys-cache
 
 systemctl restart wpsd-nightly-tasks.timer
 systemctl restart wpsd-running-tasks.timer
