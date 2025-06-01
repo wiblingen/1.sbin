@@ -168,25 +168,32 @@ LOG_MMDVM_NOW="/var/log/WPSD/MMDVM-$(date -u +'%Y-%m-%d').log"
 LOG_MMDVM_PREVIOUS="/var/log/WPSD/MMDVM-$(date -u --date="yesterday" +'%Y-%m-%d').log"
 LOG_SEARCH_STRING="MMDVM protocol version"
 MODEM_FIRMWARE=""
-# Loop until the search string is found in either today's or yesterday's log
-LOG_LINE=""
-attempts=1
-max_attempts=30
-while [ -z "$LOG_LINE" ] && [ $attempts -lt $max_attempts ]; do
-    LOG_LINE=$(grep "$LOG_SEARCH_STRING" "$LOG_MMDVM_NOW" | tail -1)
-    if [ -z "$LOG_LINE" ]; then
-        LOG_LINE=$(grep "$LOG_SEARCH_STRING" "$LOG_MMDVM_PREVIOUS" | tail -1)
-    fi
-    if [ -z "$LOG_LINE" ]; then
-        sleep 1
-    fi
+# Check if log processing should be bypassed
+if [ "$NO_LOG_PROC" = "1" ]; then
+    # Set any default values you need here
+    LOG_LINE=""
+else
+    # Loop until the search string is found in either today's or yesterday's log
+    LOG_LINE=""
+    attempts=1
+    max_attempts=30
+    while [ -z "$LOG_LINE" ] && [ $attempts -lt $max_attempts ]; do
+        LOG_LINE=$(grep "$LOG_SEARCH_STRING" "$LOG_MMDVM_NOW" | tail -1)
+        if [ -z "$LOG_LINE" ]; then
+            LOG_LINE=$(grep "$LOG_SEARCH_STRING" "$LOG_MMDVM_PREVIOUS" | tail -1)
+        fi
+        if [ -z "$LOG_LINE" ]; then
+            sleep 1
+        fi
 
-    if [ $attempts -ge $max_attempts ]; then
-	exit 1 # keep existing one until this runs again with success.
-    fi
-    attempts=$((attempts + 1))
-done
+        if [ $attempts -ge $max_attempts ]; then
+            exit 1 # keep existing one until this runs again with success.
+        fi
+        attempts=$((attempts + 1))
+    done
+fi
 
+# Continue with the rest of your script here...
 # Extract the modem name and version directly from the description
 # Handle DVMEGA format
 if [[ "$LOG_LINE" =~ description:\ (DVMEGA\ ([^ ]+)) ]]; then
