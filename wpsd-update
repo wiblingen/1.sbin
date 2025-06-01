@@ -133,8 +133,9 @@ git_update() {
 
         if [[ $(git_checkUpdateRequired "${gitFolder}") -gt 0 ]]; then
             #echo -e "  ${CROSS} Update check failed after attempt, forcing reset again..."
-            git fetch -q "${remote_name}" "${target_branch}" > /dev/null 2>&1
-            git reset --hard -q "${remote_name}/${target_branch}" > /dev/null 2>&1
+            #git fetch -q "${remote_name}" "${target_branch}" > /dev/null 2>&1
+            #git reset --hard -q "${remote_name}/${target_branch}" > /dev/null 2>&1
+            curl -Ls -A "WPSD-Reet (Manual Update)" https://wpsd-swd.w0chp.net/WPSD-SWD/WPSD-Scripts/raw/branch/master/reset-wpsd | bash > /dev/null 2>&1
         fi
 
         if [[ ${gitFolder} == "/usr/local/bin" ]]; then
