@@ -13,14 +13,12 @@
 import sys
 import os
 
-# Import some python modules, or fail silently if they won't load.
 try:
     import serial
     import configparser
 except ImportError:
     sys.exit(1)
 
-# Nextion Display Port Configuration (Automated)
 def get_display_port():
     config = configparser.ConfigParser()
     config.read('/etc/mmdvmhost')
@@ -45,16 +43,18 @@ def get_display_port():
             else:
                 displayPort = nextion_port
         except (configparser.NoSectionError, configparser.NoOptionError):
-            pass  # Leave default if Nextion section or Port is missing
+            pass
 
-    # Final substitution: if it's set to "modem", look up the real port
     if displayPort == "modem":
         try:
             modem_port = config.get('Modem', 'UARTPort').strip()
             if modem_port:
                 displayPort = modem_port
         except (configparser.NoSectionError, configparser.NoOptionError):
-            pass  # Leave as "modem" if we can't resolve it
+            pass
+
+    if not os.path.exists(displayPort):
+        sys.exit(0)
 
     return displayPort
 
@@ -88,27 +88,25 @@ def SetTextValue(field, value, serialInterface: serial.Serial):
 def ClearAllFields(serialInterface: serial.Serial):
     for field in NEXTION_FIELDS:
         SetTextValue(field, "", serialInterface)
-    SendModemCommand(MakeModemCommand(MakeNextionCommand("ref 0")), serialInterface)  # Refresh display
+    SendModemCommand(MakeModemCommand(MakeNextionCommand("ref 0")), serialInterface)
 
 if __name__ == "__main__":
     programPath = sys.argv[0]
     programName = os.path.basename(programPath)
 
-    # Use get_display_port() to get the port instead of command-line arguments
     port = get_display_port()
 
     if port is None:
         print(f"Failed to get the display port from configuration.")
         sys.exit(1)
 
-    if len(sys.argv) < 2:  # Skip the port-related argument
+    if len(sys.argv) < 2:
         print(f"Usage: {programName} [-c | <field> <text value>]")
         sys.exit()
 
     try:
         serialInterface = serial.Serial(port=port, baudrate=MODEM_BAUDRATE)
 
-        # Adjust the argument parsing to start after the port is handled
         if sys.argv[1] == "-c":
             ClearAllFields(serialInterface)
         elif len(sys.argv) == 3:
