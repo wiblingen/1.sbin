@@ -183,7 +183,7 @@ if [ -f "/root/XLXHosts.txt" ]; then
     sort -o ${XLXHOSTS} -t ';' -k1,1 ${XLXHOSTS}
 fi
 
-echo "Processing Radio ID database (user.csv)..."
+echo "Processing Radio ID DMR database (user.csv)..."
 # Nextion and LiveCaller DMR ID DB's
 bunzip2 -f ${RADIOIDDB}.bz2
 mv $RADIOIDDB $RADIOIDDB_TMP
