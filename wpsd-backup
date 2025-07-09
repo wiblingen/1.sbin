@@ -59,7 +59,7 @@ function CreateBackup() {
     cp /etc/dapnetapi.key $backupDir > /dev/null 2>&1
     cp /etc/default/gpsd $backupDir > /dev/null 2>&1
     cp /etc/*_paused $backupDir > /dev/null 2>&1
-    cp /etc/.bm_tgs.json.saved $backupDir > /dev/null 2>&1
+    cp /etc/wpsd-bm-config.json $backupDir > /dev/null 2>&1
     cp /etc/.WPSD_config $backupDir > /dev/null 2>&1
     cp /etc/timeserver.disable $backupDir > /dev/null 2>&1
     cp /usr/local/etc/RSSI.dat $backupDir > /dev/null 2>&1

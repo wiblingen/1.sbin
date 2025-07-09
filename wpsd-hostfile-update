@@ -6,7 +6,10 @@
 #                                                     #
 #######################################################
 
+echo "Starting WPSD Host, TG, and ID DB files update script..."
+
 # Check if we are root
+echo "Checking for root privileges..."
 if [ "$(id -u)" != "0" ];then
     echo "This script must be run as root" 1>&2
     exit 1
@@ -14,24 +17,27 @@ fi
 
 source /usr/local/sbin/.wpsd-common-funcs
 
-ProgVer="WPSD-HostFileUpdater v4.5"
+ProgVer="WPSD-HostFileUpdater v4.6"
 
 OptIntoDiags_value=${OptIntoDiags_value:-true}
 
+echo "Checking user's update preference..."
 if [ "$OptIntoDiags_value" != 'true' ] ; then
     echo "User has opted out of updates and diagnostics. Exiting..."
     exit 1
 fi
 
 # check age of task marker file if it exists, and if it's < N hours young, bail.
+echo "Checking hostfile age..."
 if [[ ${FORCE} -ne 1 ]] ; then # please be thoughtful here. This env. var. is called by a few places in the admin pages.
     if [  -f '/var/run/hostfiles-up' ] && [ "$(( $(date +"%s") - $(stat -c "%Y" "/var/run/hostfiles-up") ))" -lt "14400" ]; then
-	echo "Hostfles are less than 4 hours old. Not updating."
+	echo "Hostfiles are less than 4 hours old. Not updating."
 	echo "To force an update, run 'sudo FORCE=1 $(basename "$0")'"
 	exit 0
     fi
 fi
 
+echo "Acquiring script lock..."
 exec 200>/var/lock/wpsd-hostfiles.lock || exit 1 # only one exec per time
 if ! flock -n 200 ; then
   echo "Process already running"
@@ -39,6 +45,7 @@ if ! flock -n 200 ; then
 fi
 
 # connectivity check
+echo "Performing connectivity check to WPSD Hostfile Update Server..."
 conn_check
 if $connection_established; then
     echo "WPSD Hostfile Update Server connection OK...downloading hostfiles."
@@ -47,27 +54,32 @@ else
     exit 1
 fi
 
+echo "Creating temporary directory for hostfiles..."
 if [ ! -d /usr/local/etc/tmp ]; then
     mkdir -p /usr/local/etc/tmp
 fi
 rm -rf /usr/local/etc/tmp/hostfile-checksums
 
+echo "Downloading hostfile checksums..."
 curl --fail -L -o /tmp/hostfile-checksums -s ${hostFileURL}/hostfile-checksums --user-agent "${ProgVer}"
+
+echo "Downloading WPSD hostfiles archive..."
 curl --fail -L -o /usr/local/etc/tmp/wpsd-hostfiles.tar.bz2 -s ${hostFileURL}/wpsd-hostfiles.tar.bz2 --user-agent "${ProgVer}"
 
 echo "Checking file integrities..."
+echo "Extracting hostfiles archive..."
 tar jxf /usr/local/etc/tmp/wpsd-hostfiles.tar.bz2 -C /usr/local/etc/tmp/
 
 checksum_file="/tmp/hostfile-checksums"
 base_dir="/usr/local/etc/tmp"
 while IFS=" " read -r expected_checksum filename; do
     if [[ ! -f "$base_dir/$filename" ]]; then
-        echo "File $filename not found in $base_dir"
+        echo "Error: File $filename not found in $base_dir"
         exit 1
     fi
     actual_checksum=$(sha256sum "$base_dir/$filename" | awk '{print $1}')
     if [[ "$actual_checksum" != "$expected_checksum" ]]; then
-        echo "Checksum mismatch for $filename"
+        echo "Error: Checksum mismatch for $filename"
         exit 1
     fi
 done < "$checksum_file"
@@ -86,12 +98,14 @@ RADIOIDDB=/usr/local/etc/tmp/user.csv
 GROUPSTXT=/usr/local/etc/tmp/groups.txt
 STRIPPED=/usr/local/etc/tmp/stripped.csv
 
+echo "Handling D-Extra/D-Plus hostfile configuration..."
 if [ -f /etc/hostfiles.nodextra ]; then
   # Move XRFs to DPlus Protocol
   mv /usr/local/etc/tmp/DPlus_WithXRF_Hosts.txt ${DPlusHOSTS}
   mv /usr/local/etc/tmp/DExtra_NoXRF_Hosts.txt ${DExtraHOSTS}
 fi
 
+echo "Processing DMR ID database..."
 # Get DMR IDs
 mv ${DMRIDFILE}.bz2 /tmp/
 bunzip2 -f /tmp/DMRIds.dat.bz2
@@ -99,35 +113,42 @@ bunzip2 -f /tmp/DMRIds.dat.bz2
 cat /tmp/DMRIds.dat  2>/dev/null | grep -v '^#' | awk '($1 > 999999) && ($1 < 10000000) { print $0 }' | sort -un -k1n -o ${DMRIDFILE}
 rm -f /tmp/DMRIds.dat
 
+echo "Updating BrandMeister Talkgroup list..."
 # BM TG List for live caller and (legacy) nextion screens:
 cp ${BMTGNAMES} ${GROUPSTXT}
 
+echo "Applying custom DMR_Hosts.txt overrides (if present)..."
 # If there is a DMR override file, add its contents to DMR_Hosts.txt
 if [ -f "/root/DMR_Hosts.txt" ]; then
 	cat /root/DMR_Hosts.txt >> ${DMRHOSTS}
 fi
 
+echo "Applying custom YSFHosts.txt overrides (if present)..."
 # Add custom YSF Hosts
 if [ -f "/root/YSFHosts.txt" ]; then
 	cat /root/YSFHosts.txt >> ${YSFHOSTS}
 fi
 
+echo "Fixing DMRGateway configuration issues (if applicable)..."
 # Fix DMRGateway issues with parens
 if [ -f "/etc/dmrgateway" ]; then
 	sed -i '/Name=.*(/d' /etc/dmrgateway
 	sed -i '/Name=.*)/d' /etc/dmrgateway
 fi
 
+echo "Applying custom P25Hosts.txt overrides (if present)..."
 # Add custom P25 Hosts
 if [ -f "/root/P25Hosts.txt" ]; then
 	cat /root/P25Hosts.txt > /usr/local/etc/P25HostsLocal.txt
 fi
 
+echo "Applying custom M17Hosts.txt overrides (if present)..."
 # Add local override for M17Hosts
 if [ -f "/root/M17Hosts.txt" ]; then
 	cat /root/M17Hosts.txt >> ${M17HOSTS}
 fi
 
+echo "Ensuring NXDN hostfile configurations exist..."
 # Fix up new NXDNGateway Config HostFile setup
 if [ ! -f "/root/NXDNHosts.txt" ]; then
 	touch /root/NXDNHosts.txt
@@ -136,11 +157,13 @@ if [ ! -f "/usr/local/etc/NXDNHostsLocal.txt" ]; then
 	touch /usr/local/etc/NXDNHostsLocal.txt
 fi
 
+echo "Applying custom NXDNHosts.txt overrides (if present)..."
 # Add custom NXDN Hosts
 if [ -f "/root/NXDNHosts.txt" ]; then
 	cat /root/NXDNHosts.txt > /usr/local/etc/NXDNHostsLocal.txt
 fi
 
+echo "Applying custom XLXHosts.txt overrides (if present)..."
 # XLX override handling
 if [ -f "/root/XLXHosts.txt" ]; then
     while IFS= read -r line; do
@@ -160,6 +183,7 @@ if [ -f "/root/XLXHosts.txt" ]; then
     sort -o ${XLXHOSTS} -t ';' -k1,1 ${XLXHOSTS}
 fi
 
+echo "Processing Radio ID database (user.csv)..."
 # Nextion and LiveCaller DMR ID DB's
 bunzip2 -f ${RADIOIDDB}.bz2
 mv $RADIOIDDB $RADIOIDDB_TMP
@@ -169,27 +193,35 @@ rm -f $RADIOIDDB_TMP
 # remove header
 sed -i '1d' ${RADIOIDDB}
 
+echo "Cleaning up temporary archive files..."
 # commit!
 rm -rf /usr/local/etc/tmp/*bz2
+
+echo "Committing new hostfiles to /usr/local/etc/..."
 mv /usr/local/etc/tmp/* /usr/local/etc/
+
+echo "Creating symbolic link for legacy Nextion configs..."
 # make link for legacy nextion configs
 rm -rf ${STRIPPED}
 rm -rf /usr/local/etc/stripped.csv
 ln -s /usr/local/etc/user.csv /usr/local/etc/stripped.csv
 
+echo "Cleaning up old hostfile versions..."
 rm -rf /usr/local/etc/*2023*
 rm -rf /usr/local/etc/*2024*
 rm -rf /usr/local/etc/*2025*
 rm -rf /usr/local/etc/sed*
 
+echo "Updating hostfile update marker timestamp..."
 touch /var/run/hostfiles-up # create/reset marker
 
 if [ -t 1 ] ; then
-    echo -e "DONE."
+    echo -e "Update complete. All hostfiles have been refreshed."
 else
-    echo -e "* DONE *"
+    echo -e "* Update complete. All hostfiles have been refreshed. *"
 fi
 
+echo "Cleaning up temporary checksum file..."
 pattern="/usr/local/etc/stripped.csv.*"
 files=($pattern)
 if [ ${#files[@]} -gt 0 ]; then
