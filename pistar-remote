@@ -150,28 +150,6 @@ if config.has_option('p25', 'hostfiles'):
 else:
     p25hostfiles = str(999999999999)
 
-# M17 Control Options
-if config.has_option('m17', 'svckill'):
-    m17stop = config.get('m17', 'svckill')
-else:
-    m17stop = str(999999999999)
-if config.has_option('m17', 'svcrestart'):
-    m17restart = config.get('m17', 'svcrestart')
-else:
-    m17restart = str(999999999999)
-if config.has_option('m17', 'reboot'):
-    m17reboot = config.get('m17', 'reboot')
-else:
-    m17reboot = str(999999999999)
-if config.has_option('m17', 'shutdown'):
-    m17shutdown = config.get('m17', 'shutdown')
-else:
-    m17shutdown = str(999999999999)
-if config.has_option('m17', 'hostfiles'):
-    m17hostfiles = config.get('m17', 'hostfiles')
-else:
-    m17hostfiles = str(999999999999)
-
 # 8-Ball answers
 magic8ball = [
     'It is certain',
@@ -466,41 +444,6 @@ while True:
                                     # Update the host files
                                     os.system(
                                         r'/usr/local/sbin/wpsd-hostfile-update')
-
-                # M17 Stop MMDVMHost
-                # M: 2025-01-25 15:51:20.147 M17, received RF voice transmission from N1ADJ to SVCKILL
-                if str('M17, received RF voice transmission from ' + keeperCall + ' to ' + m17stop) in line:
-                    # Kill the Services
-                    os.system(r'systemctl stop mmdvmhost.timer')
-                    os.system(r'systemctl stop pistar-watchdog.timer')
-                    os.system(r'systemctl stop mmdvmhost.service')
-                    os.system(r'systemctl stop pistar-watchdog.service')
-
-                # M17 Restart MMDVMHost
-                # M: 2025-01-25 15:51:20.147 M17, received RF voice transmission from N1ADJ to SVCKILL
-                if str('M17, received RF voice transmission from ' + keeperCall + ' to ' + m17restart) in line:
-                    # Restart the Services
-                    os.system(r'systemctl restart mmdvmhost.service')
-                    os.system(r'systemctl restart m17gateway.service')
-                    time.sleep(30)
-
-                # M17 Restart the OS
-                # M: 2025-01-25 15:51:20.147 M17, received RF voice transmission from N1ADJ to SVCKILL
-                if str('M17, received RF voice transmission from ' + keeperCall + ' to ' + m17reboot) in line:
-                    # Restart the OS
-                    os.system(r'shutdown -r now')
-
-                # M17 Shutdown the OS
-                # M: 2025-01-25 15:51:20.147 M17, received RF voice transmission from N1ADJ to SVCKILL
-                if str('M17, received RF voice transmission from ' + keeperCall + ' to ' + m17shutdown) in line:
-                    # Shutdown the OS
-                    os.system(r'shutdown -h now')
-
-                # M17 Update Hostfiles
-                # M: 2025-01-25 15:51:20.147 M17, received RF voice transmission from N1ADJ to SVCKILL
-                if str('M17, received RF voice transmission from ' + keeperCall + ' to ' + m17hostfiles) in line:
-                    # Update Host Files
-                    os.system(r'/usr/local/sbin/wpsd-hostfile-update')
 
         # This is the 30 second sleep before the next pass.
         time.sleep(30)

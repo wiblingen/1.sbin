@@ -45,7 +45,6 @@ function CreateBackup() {
     cp /etc/ysf2dmr $backupDir > /dev/null 2>&1
     cp /etc/dgidgateway $backupDir > /dev/null 2>&1
     cp /etc/nxdngateway $backupDir > /dev/null 2>&1
-    cp /etc/m17gateway $backupDir > /dev/null 2>&1
     cp /etc/ysf2nxdn $backupDir > /dev/null 2>&1
     cp /etc/ysf2p25 $backupDir > /dev/null 2>&1
     cp /etc/dmrgateway $backupDir > /dev/null 2>&1

@@ -155,11 +155,6 @@ if $connection_established; then
 	git reset --hard origin/master
     fi
 
-    echo -e "\nUpdating Hostfiles..."
-    # Host Files Update
-    if ! [ -f /root/M17Hosts.txt ]; then
-    	echo -e "# Format: Reflector Name IP Port\n# Example:\n# M17-000    81.231.241.25    17000\n\n" > /root/M17Hosts.txt
-    fi
     echo -e "\nPerforming maint. tasks..."
     # if css does not exist, install default one
     if [ ! -f "/etc/wpsd-css.ini" ] ; then
