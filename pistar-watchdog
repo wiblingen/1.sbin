@@ -98,7 +98,6 @@ while True:  # Main loop
         "NXDNParrot": ["NXDN Network"],
         "P25Parrot": ["P25 Network"],
         "DAPNETGateway": ["DAPNET"],
-        "M17Gateway": ["M17 Network"]
     }
 
     # Check and restart MMDVMHost separately (special condition)

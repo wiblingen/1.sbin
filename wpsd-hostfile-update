@@ -89,7 +89,6 @@ DExtraHOSTS=/usr/local/etc/tmp/DExtra_Hosts.txt
 DMRIDFILE=/usr/local/etc/tmp/DMRIds.dat
 DMRHOSTS=/usr/local/etc/tmp/DMR_Hosts.txt
 DPlusHOSTS=/usr/local/etc/tmp/DPlus_Hosts.txt
-M17HOSTS=/usr/local/etc/tmp/M17Hosts.txt
 YSFHOSTS=/usr/local/etc/tmp/YSFHosts.txt
 XLXHOSTS=/usr/local/etc/tmp/XLXHosts.txt
 BMTGNAMES=/usr/local/etc/tmp/BM_TGs.json
@@ -140,12 +139,6 @@ echo "Applying custom P25Hosts.txt overrides (if present)..."
 # Add custom P25 Hosts
 if [ -f "/root/P25Hosts.txt" ]; then
 	cat /root/P25Hosts.txt > /usr/local/etc/P25HostsLocal.txt
-fi
-
-echo "Applying custom M17Hosts.txt overrides (if present)..."
-# Add local override for M17Hosts
-if [ -f "/root/M17Hosts.txt" ]; then
-	cat /root/M17Hosts.txt >> ${M17HOSTS}
 fi
 
 echo "Ensuring NXDN hostfile configurations exist..."

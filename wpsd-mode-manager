@@ -33,7 +33,7 @@ if [ -z "$1" ]; then
   echo "Eg: \`${THIS_SCRIPT} D-Star Enable\`    -    Enable D-Star mode, and restart appropriate daemon"
   echo "Eg: \`${THIS_SCRIPT} D-Star Disable\`   -    Disable D-Star mode, and restart appropriate daemon"
   echo ""
-  echo "Valid module names are: D-Star, DMR, YSF, P25, NXDN, M17, AX25 & POCSAG"
+  echo "Valid module names are: D-Star, DMR, YSF, P25, NXDN, AX25 & POCSAG"
   echo ""
   exit 0
 fi
@@ -58,10 +58,6 @@ if [ "$1" ]; then
   ([Nn][Xx][Dd][Nn])
     CUR_STATUS=$(awk -F'=' '/\[NXDN\]/{flag=1; next} flag && /Enable/{gsub(/[[:space:]]/, "", $2); print $2; flag=0}' ${MMDVMCONFIG})
     MODULE="NXDN"
-  ;;
-  ([Mm][1][7])
-    CUR_STATUS=$(awk -F'=' '/\[M17\]/{flag=1; next} flag && /Enable/{gsub(/[[:space:]]/, "", $2); print $2; flag=0}' ${MMDVMCONFIG})
-    MODULE="M17"
   ;;
   ([Pp]25)
     CUR_STATUS=$(awk -F'=' '/\[P25\]/{flag=1; next} flag && /Enable/{gsub(/[[:space:]]/, "", $2); print $2; flag=0}' ${MMDVMCONFIG})
