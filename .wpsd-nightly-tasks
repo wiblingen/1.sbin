@@ -23,19 +23,6 @@ export GIT_HTTP_USER_AGENT="WPSD-UpdateCheck (WPSD-Nightly-Tasks)"
 pkill .wpsd-running-tasks > /dev/null 2>&1
 pkill .wpsd-slipstream-tasks > /dev/null 2>&1
 
-# legacy config migration
-legacy_config_php="/var/www/dashboard/config/config.php"
-legacy_language_php="/var/www/dashboard/config/language.php"
-legacy_ircddblocal_php="/var/www/dashboard/config/ircddblocal.php"
-new_config="/etc/WPSD-Dashboard-Config.ini"
-if [[ ! -f "$new_config" || ! -s "$new_config" ]]; then
-    echo "[WPSD]" > "$new_config"
-    echo "Callsign = " >> "$new_config"
-    echo "Timezone = " >> "$new_config"
-    echo "DashLanguage = " >> "$new_config"
-    echo "TimeFormat = " >> "$new_config"
-    echo "UpdateNotifier = " >> "$new_config"
-fi
 time_format=$(grep -oP "define\('TIME_FORMAT', '\K[0-9]+" "$legacy_config_php")
 auto_update_check=$(grep -oP "define\('AUTO_UPDATE_CHECK', '\K\w+" "$legacy_config_php")
 timezone=$(grep -oP "date_default_timezone_set\('\K[^']+" "$legacy_config_php")
@@ -62,25 +49,19 @@ else
     fi
 fi
 
-# maint. tasks
 /usr/local/sbin/.wpsd-backend-maint > /dev/null 2>&1
 
-# Generate /etc/motd
 /usr/local/sbin/.wpsd-motdgen
 
-# Purge the logs older than 2 days
 rm -f $(find /var/log/pi-star/ -type f -mtime +1 -print)
 rm -f $(find /var/log/ -type f -mtime +0 -print | grep .gz)
 
-# Shrink nginx error log to stop it getting out of hand
-#echo "$(tail -500 /var/log/nginx/error.log)" > /var/log/nginx/error.log
 if [ "${OS_VER}" -lt 12 ]; then
     echo "$(tail -500 /var/log/php7.4-fpm.log)" > /var/log/php7.4-fpm.log
 else
     echo "$(tail -500 /var/log/php8.2-fpm.log)" > /var/log/php8.2-fpm.log
 fi
 
-# log file perms
 chown -R mmdvm:mmdvm /var/log/pi-star > /dev/null 2>&1
 chmod 775 /var/log/pi-star > /dev/null 2>&1
 
@@ -114,7 +95,6 @@ if $connection_established; then
 
     echo -e "\nUpdating sbins..."
     cd /usr/local/sbin
-    #git update-index --no-assume-unchanged pistar-upnp.service # get rid of legacy index not that upnp rules are in /etc/wpsd-upnp-rules
     git update-index --assume-unchanged pistar-firewall
     git --work-tree=/usr/local/sbin --git-dir=/usr/local/sbin/.git reset --hard origin/master
     git --work-tree=/usr/local/sbin --git-dir=/usr/local/sbin/.git pull origin master
@@ -128,8 +108,6 @@ if $connection_established; then
     fi
 
     echo -e "\nUpdating dashboard code..."
-    # Update the Dashboard
-    # WPSD has more than one branch. So depending on what WPSD Web Code branch the user has installed, check that branch.
     gitFolder="/var/www/dashboard"
     gitBranch="$( git --git-dir=${gitFolder}/.git symbolic-ref --short HEAD )"
     cd ${gitFolder}
@@ -156,7 +134,6 @@ if $connection_established; then
     fi
 
     echo -e "\nPerforming maint. tasks..."
-    # if css does not exist, install default one
     if [ ! -f "/etc/wpsd-css.ini" ] ; then
 	curl -Ls -A "WPSD-SuppFiles (WPSD-Daily-Nightly-Tasks)" "$SUPPORTING_FILES_REPO"/WPSD-CSS.ini -o /etc/wpsd-css.ini
     fi
@@ -232,11 +209,9 @@ else
     echo "WPSD Update Server connection failure! Will try again during next scheduled job tommorrow."
 fi
 
-# Start all the services...
 echo -e "\nStarting services..."
 /usr/local/sbin/wpsd-services start > /dev/null 2>&1
 
-# run any slipstream tasks
 /usr/local/sbin/.wpsd-slipstream-tasks > /dev/null 2>&1
 
 echo -e "\nNightly tasks done!\n"
