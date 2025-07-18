@@ -16,7 +16,7 @@ fi
 
 source /usr/local/sbin/.wpsd-common-funcs
 
-ProgVer="WPSD-HostFileUpdater_5.1"
+ProgVer="WPSD_HostFile-Updater_v5.2"
 
 OptIntoDiags_value=${OptIntoDiags_value:-true}
 
