@@ -26,45 +26,6 @@ source /usr/local/sbin/.wpsd-common-funcs
 export GIT_HTTP_CONNECT_TIMEOUT="10"
 export GIT_HTTP_USER_AGENT="WPSD-Update (Manual-Update)"
 
-# legacy config migration
-legacy_config_php="/var/www/dashboard/config/config.php"
-legacy_language_php="/var/www/dashboard/config/language.php"
-legacy_ircddblocal_php="/var/www/dashboard/config/ircddblocal.php"
-new_config="/etc/WPSD-Dashboard-Config.ini"
-if [[ ! -f "$new_config" || ! -s "$new_config" ]]; then
-    echo "[WPSD]" > "$new_config"
-    echo "Callsign = " >> "$new_config"
-    echo "Timezone = " >> "$new_config"
-    echo "DashLanguage = " >> "$new_config"
-    echo "TimeFormat = " >> "$new_config"
-    echo "UpdateNotifier = " >> "$new_config"
-fi
-time_format=$(grep -oP "define\('TIME_FORMAT', '\K[0-9]+" "$legacy_config_php")
-auto_update_check=$(grep -oP "define\('AUTO_UPDATE_CHECK', '\K\w+" "$legacy_config_php")
-timezone=$(grep -oP "date_default_timezone_set\('\K[^']+" "$legacy_config_php")
-pistar_language=$(grep -oP "pistarLanguage='\K[^']+" "$legacy_language_php")
-callsign=$(grep -oP "callsign='\K[^']+" "$legacy_ircddblocal_php")
-if [[ -z "$callsign" ]]; then
-    :
-else
-    # Update the new config file with the extracted values
-    if [[ -n "$callsign" ]]; then
-        sed -i "s|^Callsign = .*|Callsign = $callsign|" "$new_config"
-    fi
-    if [[ -n "$time_format" ]]; then
-        sed -i "s|^TimeFormat = .*|TimeFormat = $time_format|" "$new_config"
-    fi
-    if [[ -n "$auto_update_check" ]]; then
-        sed -i "s|^UpdateNotifier = .*|UpdateNotifier = $auto_update_check|" "$new_config"
-    fi
-    if [[ -n "$timezone" ]]; then
-        sed -i "s|^Timezone = .*|Timezone = $timezone|" "$new_config"
-    fi
-    if [[ -n "$pistar_language" ]]; then
-        sed -i "s|^DashLanguage = .*|DashLanguage = $pistar_language|" "$new_config"
-    fi
-fi
-
 git_checkUpdateRequired() {
     # Set the function variables
     gitFolder=${1}

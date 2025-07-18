@@ -23,32 +23,6 @@ export GIT_HTTP_USER_AGENT="WPSD-UpdateCheck (WPSD-Nightly-Tasks)"
 pkill .wpsd-running-tasks > /dev/null 2>&1
 pkill .wpsd-slipstream-tasks > /dev/null 2>&1
 
-time_format=$(grep -oP "define\('TIME_FORMAT', '\K[0-9]+" "$legacy_config_php")
-auto_update_check=$(grep -oP "define\('AUTO_UPDATE_CHECK', '\K\w+" "$legacy_config_php")
-timezone=$(grep -oP "date_default_timezone_set\('\K[^']+" "$legacy_config_php")
-pistar_language=$(grep -oP "pistarLanguage='\K[^']+" "$legacy_language_php")
-callsign=$(grep -oP "callsign='\K[^']+" "$legacy_ircddblocal_php")
-if [[ -z "$callsign" ]]; then
-    :
-else
-    # Update the new config file with the extracted values
-    if [[ -n "$callsign" ]]; then
-        sed -i "s|^Callsign = .*|Callsign = $callsign|" "$new_config"
-    fi
-    if [[ -n "$time_format" ]]; then
-        sed -i "s|^TimeFormat = .*|TimeFormat = $time_format|" "$new_config"
-    fi
-    if [[ -n "$auto_update_check" ]]; then
-        sed -i "s|^UpdateNotifier = .*|UpdateNotifier = $auto_update_check|" "$new_config"
-    fi
-    if [[ -n "$timezone" ]]; then
-        sed -i "s|^Timezone = .*|Timezone = $timezone|" "$new_config"
-    fi
-    if [[ -n "$pistar_language" ]]; then
-        sed -i "s|^DashLanguage = .*|DashLanguage = $pistar_language|" "$new_config"
-    fi
-fi
-
 /usr/local/sbin/.wpsd-backend-maint > /dev/null 2>&1
 
 /usr/local/sbin/.wpsd-motdgen

@@ -9,7 +9,6 @@
 echo "Starting WPSD Host, TG, and ID DB files update script..."
 
 # Check if we are root
-echo "Checking for root privileges..."
 if [ "$(id -u)" != "0" ];then
     echo "This script must be run as root" 1>&2
     exit 1
@@ -17,11 +16,10 @@ fi
 
 source /usr/local/sbin/.wpsd-common-funcs
 
-ProgVer="WPSD-HostFileUpdater v4.6"
+ProgVer="WPSD-HostFileUpdater_5.1"
 
 OptIntoDiags_value=${OptIntoDiags_value:-true}
 
-echo "Checking user's update preference..."
 if [ "$OptIntoDiags_value" != 'true' ] ; then
     echo "User has opted out of updates and diagnostics. Exiting..."
     exit 1
@@ -37,7 +35,6 @@ if [[ ${FORCE} -ne 1 ]] ; then # please be thoughtful here. This env. var. is ca
     fi
 fi
 
-echo "Acquiring script lock..."
 exec 200>/var/lock/wpsd-hostfiles.lock || exit 1 # only one exec per time
 if ! flock -n 200 ; then
   echo "Process already running"
@@ -54,7 +51,6 @@ else
     exit 1
 fi
 
-echo "Creating temporary directory for hostfiles..."
 if [ ! -d /usr/local/etc/tmp ]; then
     mkdir -p /usr/local/etc/tmp
 fi
@@ -67,7 +63,6 @@ echo "Downloading WPSD hostfiles archive..."
 curl --fail -L -o /usr/local/etc/tmp/wpsd-hostfiles.tar.bz2 -s ${hostFileURL}/wpsd-hostfiles.tar.bz2 --user-agent "${ProgVer}"
 
 echo "Checking file integrities..."
-echo "Extracting hostfiles archive..."
 tar jxf /usr/local/etc/tmp/wpsd-hostfiles.tar.bz2 -C /usr/local/etc/tmp/
 
 checksum_file="/tmp/hostfile-checksums"
@@ -128,7 +123,6 @@ if [ -f "/root/YSFHosts.txt" ]; then
 	cat /root/YSFHosts.txt >> ${YSFHOSTS}
 fi
 
-echo "Fixing DMRGateway configuration issues (if applicable)..."
 # Fix DMRGateway issues with parens
 if [ -f "/etc/dmrgateway" ]; then
 	sed -i '/Name=.*(/d' /etc/dmrgateway
@@ -141,7 +135,6 @@ if [ -f "/root/P25Hosts.txt" ]; then
 	cat /root/P25Hosts.txt > /usr/local/etc/P25HostsLocal.txt
 fi
 
-echo "Ensuring NXDN hostfile configurations exist..."
 # Fix up new NXDNGateway Config HostFile setup
 if [ ! -f "/root/NXDNHosts.txt" ]; then
 	touch /root/NXDNHosts.txt
@@ -186,26 +179,22 @@ rm -f $RADIOIDDB_TMP
 # remove header
 sed -i '1d' ${RADIOIDDB}
 
-echo "Cleaning up temporary archive files..."
 # commit!
 rm -rf /usr/local/etc/tmp/*bz2
 
-echo "Committing new hostfiles to /usr/local/etc/..."
+echo "Committing new hostfiles..."
 mv /usr/local/etc/tmp/* /usr/local/etc/
 
-echo "Creating symbolic link for legacy Nextion configs..."
 # make link for legacy nextion configs
 rm -rf ${STRIPPED}
 rm -rf /usr/local/etc/stripped.csv
 ln -s /usr/local/etc/user.csv /usr/local/etc/stripped.csv
 
-echo "Cleaning up old hostfile versions..."
 rm -rf /usr/local/etc/*2023*
 rm -rf /usr/local/etc/*2024*
 rm -rf /usr/local/etc/*2025*
 rm -rf /usr/local/etc/sed*
 
-echo "Updating hostfile update marker timestamp..."
 touch /var/run/hostfiles-up # create/reset marker
 
 if [ -t 1 ] ; then
@@ -214,7 +203,6 @@ else
     echo -e "* Update complete. All hostfiles have been refreshed. *"
 fi
 
-echo "Cleaning up temporary checksum file..."
 pattern="/usr/local/etc/stripped.csv.*"
 files=($pattern)
 if [ ${#files[@]} -gt 0 ]; then
