@@ -27,7 +27,7 @@ function CreateBackup() {
     mkdir $backupDir
 
     cp /etc/wpa_supplicant/wpa_supplicant.conf $backupDir > /dev/null 2>&1
-    cp /etc/NetworkManager/system.connections/*.nmconnection $backupDir > /dev/null 2>&1
+    cp /etc/NetworkManager/system-connections/*.nmconnection $backupDir > /dev/null 2>&1
     cp /etc/wpsd-upnp-rules $backupDir > /dev/null 2>&1
     cp /etc/WPSD-Dashboard-Config.ini $backupDir > /dev/null 2>&1
     cp /etc/hostapd/hostapd.conf $backupDir > /dev/null 2>&1
