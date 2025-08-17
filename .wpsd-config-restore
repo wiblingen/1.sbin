@@ -45,7 +45,7 @@ mv -f /tmp/config_restore/gpsd /etc/default/
 mv -f /tmp/config_restore/RSSI.dat /usr/local/etc/
 find /tmp/config_restore/ -maxdepth 1 -name "*Hosts.txt" -exec mv -fv {} /root \;
 mv -f /tmp/config_restore/wpa_supplicant.conf /etc/wpa_supplicant/
-mv -f /tmp/config_restore/*.nmconnection /etc/NetworkManager/system.connections/
+mv -f /tmp/config_restore/*.nmconnection /etc/NetworkManager/system-connections/
 mv -f /tmp/config_restore/wpsd-upnp-rules /etc/
 mv -f /tmp/config_restore/hostapd.conf /etc/hostapd/
 mv -f /tmp/config_restore/*_paused /etc/
