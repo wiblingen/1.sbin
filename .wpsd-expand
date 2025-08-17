@@ -1,72 +1,108 @@
 #!/bin/bash
 ############################################################################
 #                                                                          #
-#                        WPSD Partition Expander                           #
+#                     Universal WPSD Partition Expander                    #
 #                                                                          #
 ############################################################################
 
+# Make sure we are root
 if [ "$(id -u)" != "0" ]; then
-  echo -e "You need to be root to run this command...\n"
+  echo "You need to be root to run this command..."
   exit 1
 fi
 
-# Figure out if this is a systemd system
-if command -v systemctl > /dev/null && systemctl | grep -q '\-\.mount'; then
-	SYSTEMD=1
-elif [ -f /etc/init.d/cron ] && [ ! -h /etc/init.d/cron ]; then
-	SYSTEMD=0
-else
-	echo "Error - Unrecognised init system"
-	return 1
+# Check for required tools
+for CMD in findmnt lsblk parted fdisk; do
+  if ! command -v $CMD &> /dev/null; then
+    echo "Error: Required command '$CMD' not found. Please install it."
+    exit 1
+  fi
+done
+
+############################################################################
+#                    BEGIN UNIVERSAL EXPANSION LOGIC                       #
+############################################################################
+
+# Find the root partition's device path (e.g., /dev/sda2).
+# This is a robust method that handles device names, labels, and PARTUUIDs.
+ROOT_PART_PATH=$(findmnt -n -o SOURCE /)
+if [ $? -ne 0 ]; then
+  echo "Error: Could not find the root filesystem."
+  exit 1
 fi
 
-# Expand the root partition
-if [ $SYSTEMD -eq 1 ]; then
-	ROOT_PART=$(mount | sed -n 's|^/dev/\(.*\) on / .*|\1|p')
-else
-	if ! [ -h /dev/root ]; then
-		echo "Error - dont know how to expand this filesystem"
-		return 0
-	fi
-	ROOT_PART=$(readlink /dev/root)
+# If the source is a PARTUUID (common for USB drives), resolve it to a device path.
+if [[ "$ROOT_PART_PATH" == "PARTUUID="* ]]; then
+  # Use findfs to resolve PARTUUID to a device name like /dev/sda2
+  RESOLVED_PATH=$(findfs "$ROOT_PART_PATH")
+  if [ -z "$RESOLVED_PATH" ]; then
+    echo "Error: Could not resolve $ROOT_PART_PATH to a device."
+    exit 1
+  fi
+  ROOT_PART_PATH="$RESOLVED_PATH"
 fi
 
-if [ "${ROOT_PART:0:6}" != "mmcblk" ] || [ "${ROOT_PART:8:1}" != "2" ]; then
-	echo "Your partition layout is not currently supported by this tool, or your root filesystem is already expanded."
-	return 0
+# Get the short name (e.g., sda2) and the parent device name (e.g., sda)
+ROOT_PART=$(basename "$ROOT_PART_PATH") # e.g., sda2, nvme0n1p2
+ROOT_DEV_NAME=$(lsblk -no pkname "$ROOT_PART_PATH") # e.g., sda, nvme0n1
+
+if [ -z "$ROOT_DEV_NAME" ]; then
+  echo "Error: Could not determine the parent device for $ROOT_PART."
+  exit 1
+fi
+ROOT_DEV="/dev/$ROOT_DEV_NAME" # e.g., /dev/sda
+
+# Get the partition number from sysfs (the most reliable method)
+PART_NUM=$(cat "/sys/block/$ROOT_DEV_NAME/$ROOT_PART/partition")
+if [ -z "$PART_NUM" ]; then
+  echo "Error: Could not determine the partition number for $ROOT_PART."
+  exit 1
 fi
 
-LAST_PART_NUM=$(parted /dev/${ROOT_PART:0:7} -ms unit s p | tail -n 1 | cut -f 1 -d:)
-if [ $LAST_PART_NUM -ne ${ROOT_PART:8:1} ]; then
-	echo "$ROOT_PART is not the last partition. Don't know how to expand"
-	return 0
+# Check if the root partition is the last one on the disk.
+# We can only expand the last partition.
+LAST_PART_NUM=$(parted "$ROOT_DEV" -ms unit s p | tail -n 1 | cut -f 1 -d:)
+if [ "$LAST_PART_NUM" -ne "$PART_NUM" ]; then
+  echo "Error: $ROOT_PART is not the last partition. This script can only expand the last partition."
+  exit 1
 fi
+
 # Get the starting offset of the root partition
-PART_START=$(parted /dev/${ROOT_PART:0:7} -ms unit s p | grep "^${ROOT_PART:8:1}" | cut -f 2 -d: | sed 's/[^0-9]//g')
-[ "$PART_START" ] || return 1
-# Return value will likely be error for fdisk as it fails to reload the
-# partition table because the root fs is mounted
-fdisk /dev/${ROOT_PART:0:7} <<EOF
+PART_START=$(parted "$ROOT_DEV" -ms unit s p | grep "^${PART_NUM}:" | cut -f 2 -d: | sed 's/s$//')
+if [ -z "$PART_START" ]; then
+  echo "Error: Could not get start sector of partition $PART_NUM on $ROOT_DEV."
+  exit 1
+fi
+
+# Use fdisk to delete and recreate the partition with the new, larger size.
+# This is safe because the data on the partition isn't touched, only the partition table entry.
+# The filesystem resize happens on the next boot.
+echo "Resizing partition $PART_NUM on $ROOT_DEV to fill the disk."
+fdisk "$ROOT_DEV" <<EOF
 p
 d
-${ROOT_PART:8:1}
+$PART_NUM
 n
 p
-${ROOT_PART:8:1}
+$PART_NUM
 $PART_START
 
 p
 w
 EOF
 
-# now set up an init.d script
+############################################################################
+#                  END OF UNIVERSAL EXPANSION LOGIC                        #
+############################################################################
+
+# now set up an init.d script to run resize2fs on next boot
 cat <<EOF > /etc/init.d/resize2fs_once &&
 #!/bin/sh
 ### BEGIN INIT INFO
 # Provides:          resize2fs_once
 # Required-Start:
 # Required-Stop:
-# Default-Start: 3
+# Default-Start: S
 # Default-Stop:
 # Short-Description: Resize the root filesystem to fill partition
 # Description:
@@ -78,6 +114,7 @@ case "\$1" in
   start)
     log_daemon_msg "Starting resize2fs_once" &&
     resize2fs /dev/$ROOT_PART &&
+    # Remove the script and its links so it only runs once
     update-rc.d resize2fs_once remove &&
     rm /etc/init.d/resize2fs_once &&
     log_end_msg \$?
@@ -92,9 +129,9 @@ chmod +x /etc/init.d/resize2fs_once &&
 update-rc.d resize2fs_once defaults &&
 touch /boot/.expanded
 
-# Remount read-only
-
-# Finished, so tell the user
-echo "Partition expansion has been completed, please reboot to expand the filesystem to fill it"
+# Finished, so tell the user to reboot
+echo ""
+echo "✅ The partition table has been updated."
+echo "Please reboot now to allow the filesystem to be expanded."
 
 exit 0
