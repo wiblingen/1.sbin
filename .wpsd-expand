@@ -11,6 +11,8 @@ if [ "$(id -u)" != "0" ]; then
   exit 1
 fi
 
+source /usr/local/sbin/.wpsd-common-funcs
+
 # Check for required tools
 for CMD in findmnt lsblk parted fdisk systemctl; do
   if ! command -v $CMD &> /dev/null; then
