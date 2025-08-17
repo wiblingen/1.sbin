@@ -1,7 +1,7 @@
 #!/bin/bash
 ############################################################################
 #                                                                          #
-#                     Universal WPSD Partition Expander                    #
+#              Systemd-Aware Universal WPSD Partition Expander             #
 #                                                                          #
 ############################################################################
 
@@ -12,28 +12,21 @@ if [ "$(id -u)" != "0" ]; then
 fi
 
 # Check for required tools
-for CMD in findmnt lsblk parted fdisk; do
+for CMD in findmnt lsblk parted fdisk systemctl; do
   if ! command -v $CMD &> /dev/null; then
     echo "Error: Required command '$CMD' not found. Please install it."
     exit 1
   fi
 done
 
-############################################################################
-#                    BEGIN UNIVERSAL EXPANSION LOGIC                       #
-############################################################################
-
-# Find the root partition's device path (e.g., /dev/sda2).
-# This is a robust method that handles device names, labels, and PARTUUIDs.
+# --- Universal Partition Detection Logic ---
 ROOT_PART_PATH=$(findmnt -n -o SOURCE /)
 if [ $? -ne 0 ]; then
   echo "Error: Could not find the root filesystem."
   exit 1
 fi
 
-# If the source is a PARTUUID (common for USB drives), resolve it to a device path.
 if [[ "$ROOT_PART_PATH" == "PARTUUID="* ]]; then
-  # Use findfs to resolve PARTUUID to a device name like /dev/sda2
   RESOLVED_PATH=$(findfs "$ROOT_PART_PATH")
   if [ -z "$RESOLVED_PATH" ]; then
     echo "Error: Could not resolve $ROOT_PART_PATH to a device."
@@ -42,41 +35,33 @@ if [[ "$ROOT_PART_PATH" == "PARTUUID="* ]]; then
   ROOT_PART_PATH="$RESOLVED_PATH"
 fi
 
-# Get the short name (e.g., sda2) and the parent device name (e.g., sda)
-ROOT_PART=$(basename "$ROOT_PART_PATH") # e.g., sda2, nvme0n1p2
-ROOT_DEV_NAME=$(lsblk -no pkname "$ROOT_PART_PATH") # e.g., sda, nvme0n1
+ROOT_PART=$(basename "$ROOT_PART_PATH")
+ROOT_DEV_NAME=$(lsblk -no pkname "$ROOT_PART_PATH")
 
 if [ -z "$ROOT_DEV_NAME" ]; then
   echo "Error: Could not determine the parent device for $ROOT_PART."
   exit 1
 fi
-ROOT_DEV="/dev/$ROOT_DEV_NAME" # e.g., /dev/sda
+ROOT_DEV="/dev/$ROOT_DEV_NAME"
 
-# Get the partition number from sysfs (the most reliable method)
 PART_NUM=$(cat "/sys/block/$ROOT_DEV_NAME/$ROOT_PART/partition")
 if [ -z "$PART_NUM" ]; then
   echo "Error: Could not determine the partition number for $ROOT_PART."
   exit 1
 fi
 
-# Check if the root partition is the last one on the disk.
-# We can only expand the last partition.
 LAST_PART_NUM=$(parted "$ROOT_DEV" -ms unit s p | tail -n 1 | cut -f 1 -d:)
 if [ "$LAST_PART_NUM" -ne "$PART_NUM" ]; then
   echo "Error: $ROOT_PART is not the last partition. This script can only expand the last partition."
   exit 1
 fi
 
-# Get the starting offset of the root partition
 PART_START=$(parted "$ROOT_DEV" -ms unit s p | grep "^${PART_NUM}:" | cut -f 2 -d: | sed 's/s$//')
 if [ -z "$PART_START" ]; then
   echo "Error: Could not get start sector of partition $PART_NUM on $ROOT_DEV."
   exit 1
 fi
 
-# Use fdisk to delete and recreate the partition with the new, larger size.
-# This is safe because the data on the partition isn't touched, only the partition table entry.
-# The filesystem resize happens on the next boot.
 echo "Resizing partition $PART_NUM on $ROOT_DEV to fill the disk."
 fdisk "$ROOT_DEV" <<EOF
 p
@@ -91,12 +76,49 @@ p
 w
 EOF
 
-############################################################################
-#                  END OF UNIVERSAL EXPANSION LOGIC                        #
-############################################################################
+# --- Setup one-shot resize service based on OS version ---
 
-# now set up an init.d script to run resize2fs on next boot
-cat <<EOF > /etc/init.d/resize2fs_once &&
+OS_VER=""
+# Check for /etc/os-release to determine the OS version
+if [ -f /etc/os-release ]; then
+  . /etc/os-release
+  if [ "$ID" = "debian" ]; then
+    # Extract major version number (e.g., "12" from "12.5")
+    OS_VER=${VERSION_ID%%.*}
+  fi
+fi
+
+# If OS is Debian 12 (Bookworm) or newer, use systemd.
+if [ -n "$OS_VER" ] && [ "${OS_VER}" -ge "12" ]; then
+
+  ## Systemd method for Debian 12+ ##
+  echo "Info: Debian ${OS_VER} detected. Creating systemd one-shot service."
+  cat << EOF > /etc/systemd/system/resize2fs-once.service
+[Unit]
+Description=Resize root filesystem to fill partition
+DefaultDependencies=no
+After=systemd-remount-fs.service
+Before=sysinit.target
+
+[Service]
+Type=oneshot
+ExecStart=/sbin/resize2fs /dev/${ROOT_PART}
+ExecStart=/bin/systemctl disable resize2fs-once.service
+ExecStart=/bin/rm /etc/systemd/system/resize2fs-once.service
+
+[Install]
+WantedBy=sysinit.target
+EOF
+
+  # Enable the one-shot service to run on next boot
+  systemctl daemon-reload
+  systemctl enable resize2fs-once.service > /dev/null 2>&1
+
+else
+
+  ## Legacy init.d method for older systems ##
+  echo "Info: Older OS detected or OS is not Debian. Using legacy init.d method."
+  cat <<EOF > /etc/init.d/resize2fs_once &&
 #!/bin/sh
 ### BEGIN INIT INFO
 # Provides:          resize2fs_once
@@ -125,8 +147,11 @@ case "\$1" in
     ;;
 esac
 EOF
-chmod +x /etc/init.d/resize2fs_once &&
-update-rc.d resize2fs_once defaults &&
+  chmod +x /etc/init.d/resize2fs_once &&
+  update-rc.d resize2fs_once defaults
+
+fi
+
 touch /boot/.expanded
 
 # Finished, so tell the user to reboot
