@@ -11,8 +11,6 @@ if [ "$(id -u)" != "0" ]; then
   exit 1
 fi
 
-source /usr/local/sbin/.wpsd-common-funcs
-
 # Check for required tools
 for CMD in findmnt lsblk parted fdisk systemctl; do
   if ! command -v $CMD &> /dev/null; then
@@ -94,22 +92,23 @@ fi
 if [ -n "$OS_VER" ] && [ "${OS_VER}" -ge "12" ]; then
 
   ## Systemd method for Debian 12+ ##
-  echo "Info: Debian ${OS_VER} detected. Creating systemd one-shot service."
+  echo "Info: Debian ${OS_VER} detected. Creating robust systemd one-shot service."
   cat << EOF > /etc/systemd/system/resize2fs-once.service
 [Unit]
 Description=Resize root filesystem to fill partition
-DefaultDependencies=no
-After=systemd-remount-fs.service
-Before=sysinit.target
+# Ensures filesystems are mounted read-write before this runs
+After=local-fs.target
 
 [Service]
 Type=oneshot
 ExecStart=/sbin/resize2fs /dev/${ROOT_PART}
-ExecStart=/bin/systemctl disable resize2fs-once.service
-ExecStart=/bin/rm /etc/systemd/system/resize2fs-once.service
+# These cleanup commands run only after the resize is successful
+ExecStartPost=/bin/systemctl disable resize2fs-once.service
+ExecStartPost=/bin/rm /etc/systemd/system/resize2fs-once.service
 
 [Install]
-WantedBy=sysinit.target
+# A more reliable target that ensures the system is ready
+WantedBy=multi-user.target
 EOF
 
   # Enable the one-shot service to run on next boot
