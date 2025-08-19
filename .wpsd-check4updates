@@ -2,41 +2,80 @@
 
 source /usr/local/sbin/.wpsd-common-funcs
 
-local_calc_file="/etc/.WPSD_local_version_calc"
-remote_calc_file="/etc/.WPSD_remote_version_calc"
+# Local cache for the remote version file
+gitRemoteVerCache="/etc/.WPSD_remote_version"
 
-# Validate that both calculated version files exist before proceeding
-if [[ ! -s "$local_calc_file" || ! -s "$remote_calc_file" ]]; then
+# Function to get the remote version for a repo key
+get_remote_version() {
+    local repo_key="$1"
+    grep "^${repo_key}=" "$gitRemoteVerCache" | cut -d'=' -f2
+}
+
+# Function to get the local version for a repository
+get_local_version() {
+    local gitFolder="$1"
+    local gitBranch
+    gitBranch=$(git --git-dir="${gitFolder}/.git" symbolic-ref --short HEAD)
+    git --work-tree="$gitFolder" --git-dir="${gitFolder}/.git" rev-parse --short=10 "$gitBranch"
+}
+
+# Function to check for an update
+check_update() {
+    local repo_key="$1"
+    local gitFolder="$2"
+    local remote_version
+    local local_version
+    remote_version=$(get_remote_version "$repo_key")
+    local_version=$(get_local_version "$gitFolder")
+
+    if [ "$remote_version" != "$local_version" ]; then
+        echo "1"
+    else
+        echo "0"
+    fi
+}
+
+# Define repositories
+declare -A repos
+repos=( ["WPSD-Scripts"]="/usr/local/sbin" ["WPSD-Binaries"]="/usr/local/bin" ["WPSD-WebCode"]="/var/www/dashboard" )
+
+# Check if the system is a DVmega-Cast device
+castResult=$(isDVmegaCast)
+if [[ $castResult == "true" ]]; then
+    repos["DVMega-Cast"]="/opt/cast"
+fi
+
+# Validate the presence of the remote version file
+if [[ ! -s "$gitRemoteVerCache" ]]; then
     exit 1
 fi
 
-# Determine which version key to use (standard or DVMega-Cast)
-hash_key_to_check="WPSD"
-if [[ $(isDVmegaCast) == "true" ]]; then
-    hash_key_to_check="WPSD_CAST"
-fi
-
-# Extract the single hash value from each file
-local_hash=$(grep "^${hash_key_to_check}=" "$local_calc_file" | cut -d'=' -f2)
-remote_hash=$(grep "^${hash_key_to_check}=" "$remote_calc_file" | cut -d'=' -f2)
-
-# Compare the hashes to see if an update is available
+# Check for updates
 update_available=false
-if [[ -n "$remote_hash" && "$remote_hash" != "$local_hash" ]]; then
-    update_available=true
+html_output=false
+for repo_key in "${!repos[@]}"; do
+    if [[ $(check_update "$repo_key" "${repos[$repo_key]}") -eq 1 ]]; then
+        update_available=true
+        if [ -t 1 ]; then # running from terminal
+            echo "Update available for $repo_key!"
+        else
+            html_output=true
+        fi
+    else
+        if [ -t 1 ]; then
+            echo "No updates for $repo_key."
+        fi
+    fi
+done
+if [[ $html_output == true ]]; then
+    echo "&nbsp;<a class=\"lookatme\" lookatme-text=\"Update available!\" href=\"/admin/update.php\">Update available!</a>"
 fi
 
-# Display the result
-if [[ $update_available == true ]]; then
+if ! $update_available; then
     if [ -t 1 ]; then # running from terminal
-        echo "An update is available for your WPSD installation."
-    else # running from web
-        echo "&nbsp;<a class=\"lookatme\" lookatme-text=\"Update available!\" href=\"/admin/update.php\">Update available!</a>"
-    fi
-else
-    if [ -t 1 ]; then # running from terminal
-        echo "Your WPSD installation is up-to-date."
+        echo "All repositories are up-to-date."
     fi
 fi
 
 exit 0
+
