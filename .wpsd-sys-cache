@@ -5,8 +5,6 @@
 INI_FILE="/etc/WPSD-release"
 TMP_INI_FILE="/usr/local/etc/.WPSD-release"
 
-source "/usr/local/sbin/.wpsd-common-funcs"
-
 PlatDet="/usr/local/sbin/.wpsd-platform-detect"
 # Function to perform the mappings
 map_hardware() {
@@ -252,67 +250,12 @@ else
 fi
 
 # add / update WPSD version hash to "$TMP_INI_FILE"
-gitLocalCalcCache="/etc/.WPSD_local_version_calc"
-get_local_version() {
-    local gitFolder="$1"
-    # Exit if the git directory doesn't exist to prevent errors
-    if [ ! -d "${gitFolder}/.git" ]; then
-        echo "error_no_git_dir"
-        return
-    fi
-    local gitBranch
-    gitBranch=$(git --git-dir="${gitFolder}/.git" symbolic-ref --short HEAD)
-    git --work-tree="$gitFolder" --git-dir="${gitFolder}/.git" rev-parse --short=10 "$gitBranch"
-}
-# Gets a calculated hash value from a given file (local or remote)
-get_calculated_hash() {
-    local file_path="$1"
-    local repo_key="$2"
-    grep "^${repo_key}=" "$file_path" | cut -d'=' -f2
-}
-declare -A repos
-repos=( ["WPSD-Scripts"]="/usr/local/sbin" ["WPSD-Binaries"]="/usr/local/bin" ["WPSD-WebCode"]="/var/www/dashboard" )
-# 1. Get local hashes for the three core components
-local_hashes_combined=""
-for repo_key in "WPSD-Scripts" "WPSD-Binaries" "WPSD-WebCode"; do
-    local_version=$(get_local_version "${repos[$repo_key]}")
-    # If a repo is missing, we can't generate a valid hash, so exit
-    if [[ "$local_version" == "error_no_git_dir" ]]; then
-        exit 1
-    fi
-    local_hashes_combined+="${local_version}"
-done
-# 2. Calculate the standard hash and write it to the local calc file
-local_wpsd_hash=$(echo -n "$local_hashes_combined" | sha1sum | cut -d ' ' -f 1 | cut -c1-10)
-echo "WPSD=${local_wpsd_hash}" > "$gitLocalCalcCache"
-# 3. Handle DVMega-Cast if present
-hash_key_to_check="WPSD"
-if [[ $(isDVmegaCast) == "true" ]]; then
-    hash_key_to_check="WPSD_CAST"
-    repos["DVMega-Cast"]="/opt/cast"
-    # Get the cast repo version and append it
-    cast_version=$(get_local_version "${repos['DVMega-Cast']}")
-    if [[ "$cast_version" != "error_no_git_dir" ]]; then
-        local_hashes_combined+="${cast_version}"
-        # Calculate the combined cast hash and append it to the local file
-        local_cast_hash=$(echo -n "$local_hashes_combined" | sha1sum | cut -d ' ' -f 1 | cut -c1-10)
-        echo "WPSD_CAST=${local_cast_hash}" >> "$gitLocalCalcCache"
-    fi
-fi
-WPSDver=""
-if [ -f "$gitLocalCalcCache" ]; then
-    hash_key="WPSD"
-    if [[ $(isDVmegaCast) == "true" ]]; then
-        hash_key="WPSD_CAST"
-    fi
-    WPSDver=$(grep "^${hash_key}=" "$gitLocalCalcCache" | cut -d'=' -f2)
-fi
-if [ -n "$WPSDver" ]; then
-    if ! grep -w 'WPSD_Ver' "$TMP_INI_FILE" > /dev/null; then
-        sed -i "/Callsign =/a WPSD_Ver = ${WPSDver}" "$TMP_INI_FILE"
-    else
-        sed -i "/WPSD_Ver/c WPSD_Ver = ${WPSDver}" "$TMP_INI_FILE"
-    fi
+gitBranch=$(git --work-tree=/var/www/dashboard --git-dir=/var/www/dashboard/.git symbolic-ref --short HEAD)
+WPSDver=$( git --work-tree=/var/www/dashboard --git-dir=/var/www/dashboard/.git rev-parse --short=10 ${gitBranch} )
+if ! grep -w 'WPSD_Ver' "$TMP_INI_FILE" > /dev/null; then
+    sed -i "/Callsign =/a WPSD_Ver = ${WPSDver}" "$TMP_INI_FILE"
+else
+    sed -i "/WPSD_Ver/c WPSD_Ver = ${WPSDver}" "$TMP_INI_FILE"
 fi
 
 # cleanup legacy entries
