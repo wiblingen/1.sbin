@@ -4,6 +4,29 @@ source /usr/local/sbin/.wpsd-common-funcs
 
 UUID=$( grep UUID /etc/WPSD-release | awk '{print $3}' )
 platInfo=$( /usr/local/sbin/.wpsd-platform-detect )
+show_details=false
+
+if [[ "$1" == "-d" || "$1" == "--detail" ]]; then
+    show_details=true
+fi
+
+function DisplayMainVersion() {
+    local_calc_file="/etc/.WPSD_local_version_calc"
+    if [ ! -f "$local_calc_file" ]; then
+        return # Exit if the file doesn't exist
+    fi
+
+    hash_key="WPSD"
+    if [ "$(isDVmegaCast)" == "true" ]; then
+        hash_key="WPSD_CAST"
+    fi
+
+    main_ver=$(grep "^${hash_key}=" "$local_calc_file" | cut -d'=' -f2)
+
+    if [ -n "$main_ver" ]; then
+        echo -e "  ${BULL} WPSD Main Version:\n      Ver. # ${COL_LIGHT_ORANGE}${main_ver}${COL_NC}"
+    fi
+}
 
 function DisplayRepoStatus() {
     dir="$1"
@@ -25,7 +48,7 @@ function DisplayRepoStatus() {
 
     repo=$(git --work-tree=${dir} --git-dir=${dir}/.git config --get remote.origin.url)
     branch=$(git --work-tree=${dir} --git-dir=${dir}/.git symbolic-ref --short HEAD)
-    ver_cmd=$( git --work-tree=${dir} --git-dir=${dir}/.git rev-parse HEAD | tail -1 | awk '{ print substr($1,1,10) }' ) # last pipe to awk: converts long hash to 10 chars.
+    ver_cmd=$( git --work-tree=${dir} --git-dir=${dir}/.git rev-parse HEAD | tail -1 | awk '{ print substr($1,1,10) }' )
     if [ "${branch}" != "master" ] ; then
         echo -e "  ${BULL} $TARGET:\n      On the '${BOLD}${branch}${COL_NC}' branch; Ver. # ${COL_LIGHT_ORANGE}${ver_cmd}${COL_NC}"
     else
@@ -43,15 +66,23 @@ echo ' _      _____  _______
 |__/|__/_/  /___/____/'
     echo -e "\n${COL_NC}Version Status"
     echo -e "---------------"
-    DisplayRepoStatus "/var/www/dashboard"
-    DisplayRepoStatus "/usr/local/sbin"
-    DisplayRepoStatus "/usr/local/bin"
-    # dvmega cast-specific stuff
-    castResult=$(isDVmegaCast)
-    if [ "$castResult" == "true" ]; then
-	DisplayRepoStatus "/opt/cast"
+    
+    DisplayMainVersion
+
+    if [ "$show_details" == "true" ]; then
+        echo -e "\n${COL_NC}Component Details"
+        echo -e "-----------------"
+        DisplayRepoStatus "/var/www/dashboard"
+        DisplayRepoStatus "/usr/local/sbin"
+        DisplayRepoStatus "/usr/local/bin"
+        
+        # dvmega cast-specific stuff
+        if [ "$(isDVmegaCast)" == "true" ]; then
+            DisplayRepoStatus "/opt/cast"
+        fi
     fi
-    if [ -t 1 ] || [ -n "$PS1" ] ; then # since this is called by `motdgen`, omit the following for the motd...
+
+    if [ -t 1 ] || [ -n "$PS1" ] ; then
 	echo -e "\n${COL_NC}Environment Status"
 	echo -e "------------------"
 	echo -e "  ${BULL} WPSD Instance ID:\n      ${COL_LIGHT_MAGENTA}${UUID}${COL_NC}"
