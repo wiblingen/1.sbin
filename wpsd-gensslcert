@@ -18,50 +18,62 @@ if ! flock -n 200 ; then
 fi
 
 # Option to force re-generaton, cert only lives for 1 year
-if [ "$1" == "force" ]; then
+if [ "$1" == "deletecert" ]; then
 	rm -rf /etc/ssl/certs/wpsd.crt
-fi
+	echo -e "SSL certificate deleted. Run this command again with the \"enable\""
+	echo -e "option to generate a new certificate if you want to use https."
 
-# If the self-signed cert doesnt exist - create it.
-if [ ! -f /etc/ssl/certs/wpsd.crt ]; then
-	getFQDN=$( hostname -A | cut -d " " -f1 )
-	# Create the new Private / Public keys
-	openssl req -x509 -nodes -days 3650 -newkey rsa:4096 -keyout /etc/ssl/private/wpsd.key -out /etc/ssl/certs/wpsd.crt \
-	  -subj "/C=US/ST=Minnesota/L=Winona/O=WPSD Project/OU=WPSD Dev Team/CN=wpsd" \
-	  -addext "subjectAltName=DNS:wpsd,DNS:wpsd.local,DNS:pi-star,DNS:pi-star.local,DNS:pi-star*,DNS:pi-star*.local,DNS:${getFQDN},DNS:$(hostname).local,DNS:$(hostname)"
-
-	# Configure NginX
-	cat << 'EOF' > /etc/nginx/sites-enabled/pi-star
-server {
-	listen 80 default_server;
-	listen 443 ssl http2;
-	root /var/www/dashboard;
-
-	ssl_certificate /etc/ssl/certs/wpsd.crt;
-	ssl_certificate_key /etc/ssl/private/wpsd.key;
-	ssl_protocols TLSv1.2 TLSv1.1 TLSv1;
-
-	location ^~ /admin {
-	try_files $uri $uri/ =404;
-		auth_basic "Restricted";
-		auth_basic_user_file /var/www/.htpasswd;
-		client_max_body_size 512K;
-
-		# Load the defaults
-		include	/etc/nginx/default.d/php.conf;
-	}
-
-	location ~ /\.git {
-		deny all;
-	}
-
-	# Load the defaults
-	include	/etc/nginx/default.d/*.conf;
-}
-EOF
-
+# Return to non-ssl state
+elif [ "$1" == "disable" ]; then
+	cd /etc/nginx/sites-enabled
+	rm wpsd
+	ln -s ../sites-available/wpsd wpsd
 	# Restart NginX with the new config.
 	systemctl restart nginx
-	echo -e "SSL enabled. You will need to refresh the WPSD dashboard and add/accept the new self-signed certificate to your web browser."
+	echo -e "SSL disabled. You will need to refresh the WPSD dashboard."
 
+# Return to non-ssl state
+elif [ "$1" == "enable" ]; then
+	# If the self-signed cert doesnt exist - create it.
+	if [ ! -f /etc/ssl/certs/wpsd.crt ]; then
+		getFQDN=$( hostname -A | cut -d " " -f1 )
+		# Create the new Private / Public keys
+		openssl req -x509 -nodes -days 3650 -newkey rsa:4096 -keyout /etc/ssl/private/wpsd.key -out /etc/ssl/certs/wpsd.crt \
+		  -subj "/C=US/ST=Minnesota/L=Winona/O=WPSD Project/OU=WPSD Dev Team/CN=wpsd" \
+		  -addext "subjectAltName=DNS:wpsd,DNS:wpsd.local,DNS:pi-star,DNS:pi-star.local,DNS:pi-star*,DNS:pi-star*.local,DNS:${getFQDN},DNS:$(hostname).local,DNS:$(hostname)"
+	fi
+	# Configure NginX
+	cd /etc/nginx/sites-enabled
+	rm wpsd
+	ln -s ../sites-available/wpsd-ssl wpsd
+	# Restart NginX with the new config.
+	systemctl restart nginx
+	echo -e "SSL enabled. You will need to refresh the WPSD dashboard and "
+	echo -e "add/accept the new self-signed certificate to your web browser."
+else
+	cat << EOF
+
+wpsd-sslgensslcert
+
+This script generates a self-signed SSL certificate for the WPSD dashboard and enables
+its use in the web server.
+
+There are three options;
+
+deletecert 	- Deletes the existing certificate.  If you are using https then
+			  you need to run the "enable" command again to generate a new 
+			  certificate.
+
+disable		- Disables https in the webserver.  Does *not* delete the 
+			  existing certificate.
+
+enable		- Generates a new certificate (if required) and configures
+			  the web server for https.
+
+Both the "enable" and "disable" commands will restart the web server
+making it temporarily unavailable.
+
+This command must be run as root or via sudo.
+
+EOF
 fi
