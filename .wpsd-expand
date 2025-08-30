@@ -78,15 +78,7 @@ EOF
 
 # --- Setup one-shot resize service based on OS version ---
 
-OS_VER=""
-# Check for /etc/os-release to determine the OS version
-if [ -f /etc/os-release ]; then
-  . /etc/os-release
-  if [ "$ID" = "debian" ]; then
-    # Extract major version number (e.g., "12" from "12.5")
-    OS_VER=${VERSION_ID%%.*}
-  fi
-fi
+source /usr/local/sbin/.wpsd-common-funcs
 
 # If OS is Debian 12 (Bookworm) or newer, use systemd.
 if [ -n "$OS_VER" ] && [ "${OS_VER}" -ge "12" ]; then
