@@ -25,12 +25,12 @@ fi
 # The "boot" arg. leaves mmdvmhost services alone since they have not started yet and we
 # need the pi4/5 GPIO pins to init before MMDVMHost. No "boot" option is for when MMDVMhost
 # is started/running after bootup
-if [ "${1}" = "boot" ] && [[ ! -f "$armbian_env_file" ]] ; then
-  if [ "${model}" != "Pi4" ] && [ "${model}" != "Pi5" ]; then
-    echo "The 'boot' option only works with Pi 4 and Pi 5 boards. Try again without the 'boot' option."
-    exit 0
-  fi
-fi
+#if [ "${1}" = "boot" ] && [[ ! -f "$armbian_env_file" ]] ; then
+#  if [ "${model}" != "Pi4" ] && [ "${model}" != "Pi5" ]; then
+#    echo "The 'boot' option only works with Pi 4 and Pi 5 boards. Try again without the 'boot' option."
+#    exit 0
+#  fi
+#fi
 
 if [ -f '/etc/dstar-radio.mmdvmhost' ]; then
     modemSelected=$(grep 'Hardware=' /etc/dstar-radio.mmdvmhost)
