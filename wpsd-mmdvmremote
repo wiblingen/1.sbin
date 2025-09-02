@@ -35,34 +35,34 @@ fi
 
 
 if [ ${1} ]; then
-	# Make the input lower case
-	inputcmd=$(echo ${1} | tr '[:upper:]' '[:lower:]')
+    # Make the input lower case
+    inputcmd=$(echo ${1} | tr '[:upper:]' '[:lower:]')
 
-	case ${inputcmd} in
-		idle)
-			${cmd} ${port} mode idle
-		;;
-		lockout)
-			${cmd} ${port} mode lockout
-		;;
-		d-star)
-			${cmd} ${port} mode d-star
-		;;
-		dmr)
-			${cmd} ${port} mode dmr
-		;;
-		ysf)
-			${cmd} ${port} mode ysf
-		;;
-		p25)
-			${cmd} ${port} mode p25
-		;;
-		nxdn)
-			${cmd} ${port} mode nxdn
-		;;
-		*)
-			echo "Command not understood..."
-		;;
+    case ${inputcmd} in
+	idle)
+	    (cd /var/log/pi-star && ${cmd} ${port} mode idle)
+	;;
+	lockout)
+	    (cd /var/log/pi-star && ${cmd} ${port} mode lockout)
+	;;
+	d-star)
+	    (cd /var/log/pi-star && ${cmd} ${port} mode d-star)
+	;;
+	dmr)
+	    (cd /var/log/pi-star && ${cmd} ${port} mode dmr)
+	;;
+	ysf)
+	    (cd /var/log/pi-star && ${cmd} ${port} mode ysf)
+	;;
+	p25)
+	    (cd /var/log/pi-star && ${cmd} ${port} mode p25)
+	;;
+	nxdn)
+	    (cd /var/log/pi-star && ${cmd} ${port} mode nxdn)
+	;;
+	*)
+	    echo "Command not understood..."
+	;;
 	esac
 
 	# Cleanup any left over logs that are dropped all over the place...
