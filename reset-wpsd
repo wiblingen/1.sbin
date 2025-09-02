@@ -49,7 +49,7 @@ if [ "$castResult" == "true" ]; then
     mkdir -p /usr/local/cast/etc > /dev/null 2>&1
     ln -s /opt/cast/usr-local-cast-bin /usr/local/cast/bin > /dev/null 2>&1
     ln -s /opt/cast/usr-local-cast-sbin /usr/local/cast/sbin > /dev/null 2>&1
-    ln -s /opt/cast/usr-local-cast-www /var/www/dashboard/admin/cast > /dev/null 2>&1
+    #ln -s /opt/cast/usr-local-cast-www /var/www/dashboard/admin/cast > /dev/null 2>&1
     cp -a /opt/cast/usr-local-cast-etc/* /usr/local/cast/etc/ > /dev/null 2>&1
 
     # ensure configs always have proper perms
@@ -71,7 +71,7 @@ rm -rf /etc/WPSD-release ; touch /etc/WPSD-release
 
 wpsd-services start
 
-/usr/local/sbin/.wpsd-slipstream-tasks
+#/usr/local/sbin/.wpsd-slipstream-tasks
 NO_LOG_PROC=1 /usr/local/sbin/.wpsd-sys-cache
 
 systemctl restart wpsd-nightly-tasks.timer
