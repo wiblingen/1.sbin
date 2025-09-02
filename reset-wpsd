@@ -76,7 +76,9 @@ NO_LOG_PROC=1 /usr/local/sbin/.wpsd-sys-cache
 
 systemctl restart wpsd-nightly-tasks.timer
 systemctl restart wpsd-running-tasks.timer
-systemctl restart wpsd-running-tasks.service
+#systemctl restart wpsd-running-tasks.service
+
+cd /tmp
 
 echo "WPSD has been reset/reinstalled."
 
