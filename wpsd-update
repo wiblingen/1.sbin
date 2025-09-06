@@ -52,7 +52,7 @@ git_update() {
     local remote_name="origin"
 
     if [[ $(git_checkUpdateRequired "${gitFolder}") -gt 0 ]]; then
-        echo -e "  ${COL_LIGHT_MAGENTA}${NOTE} Updates found - Installing now..."
+        echo -e "  ${COL_BRIGHT_MAGENTA}${NOTE} Updates found - Installing now..."
 
         local current_dir=$(pwd)
         cd "${gitFolder}" || { echo "ERROR: Could not cd to ${gitFolder}"; return 1; }
@@ -68,10 +68,10 @@ git_update() {
         if [[ ${gitFolder} == "/usr/local/sbin" ]]; then
             git fetch -q "${remote_name}" master > /dev/null 2>&1
             if [ "$(git diff --name-only ${remote_name}/master 2>/dev/null | grep -x wpsd-update 2>/dev/null)" = "wpsd-update" ]; then
-                echo -e "\n  ${COL_LIGHT_BLUE}${INFO} New version of the Updater available. Performing self-update..."
+                echo -e "\n  ${COL_BRIGHT_BLUE}${INFO} New version of the Updater available. Performing self-update..."
                 git reset --hard -q "${remote_name}/master" > /dev/null 2>&1
                 echo -e "  ${TICK} Updates installed!"
-                echo -e "\n  ${COL_LIGHT_BLUE}${INFO} Relaunching Updater with the new version in 3 seconds..."
+                echo -e "\n  ${COL_BRIGHT_BLUE}${INFO} Relaunching Updater with the new version in 3 seconds..."
                 sleep 4
                 exec "$0" "$@"
                 exit 1
@@ -85,9 +85,9 @@ git_update() {
              target_branch="master"
         fi
 
-        #echo -e "  ${COL_LIGHT_MAGENTA}${NOTE} Fetching branch '${target_branch}'..."
+        #echo -e "  ${COL_BRIGHT_MAGENTA}${NOTE} Fetching branch '${target_branch}'..."
         git fetch -q "${remote_name}" "${target_branch}" > /dev/null 2>&1
-        #echo -e "  ${COL_LIGHT_MAGENTA}${NOTE} Resetting to '${remote_name}/${target_branch}'..."
+        #echo -e "  ${COL_BRIGHT_MAGENTA}${NOTE} Resetting to '${remote_name}/${target_branch}'..."
         git reset --hard -q "${remote_name}/${target_branch}" > /dev/null 2>&1
 
         git stash clear > /dev/null 2>&1
@@ -95,7 +95,7 @@ git_update() {
         if [[ $(git_checkUpdateRequired "${gitFolder}") -gt 0 ]]; then
             echo -e "  ${CROSS} Updaate sync required: forcing reset and update...."
             curl -Ls -A "WPSD-Reset (Manual Update)" https://wpsd-swd.w0chp.net/WPSD-SWD/WPSD-Scripts/raw/branch/master/reset-wpsd | bash > /dev/null 2>&1
-	    echo -e "\n  ${COL_LIGHT_BLUE}${INFO} Sync & Reset complete: Relaunching Updater in 3 seconds..."
+	    echo -e "\n  ${COL_BRIGHT_BLUE}${INFO} Sync & Reset complete: Relaunching Updater in 3 seconds..."
 	    sleep 4
 	    exec "$0" "$@"
         fi
@@ -112,12 +112,12 @@ git_update() {
 
 term_banner() {
     clear
-    echo -e -n "${COL_LIGHT_CYAN}${BOLD}"
+    echo -e -n "${COL_BRIGHT_CYAN}${BOLD}"
     echo '    _      _____  _______ 
    | | /| / / _ \/ __/ _ \
    | |/ |/ / ___/\ \/ // /
    |__/|__/_/  /___/____/'
-    echo -e -n "${COL_NC}${COL_LIGHT_ORANGE}${BOLD}WPSD Software Update Utility${COL_NC}\n"
+    echo -e -n "${COL_NC}${COL_BRIGHT_ORANGE}${BOLD}WPSD Software Update Utility${COL_NC}\n"
 }
 
 perform_update() {
@@ -128,7 +128,7 @@ perform_update() {
 	    echo -e "  Please wait...\n"
 	    apt-get -q=2 update
 	    if ! apt-get upgrade --dry-run | grep -qw "0 upgraded"; then
-		echo -e "  ${COL_LIGHT_MAGENTA}${INFO} Operating system updates available; installing now..."
+		echo -e "  ${COL_BRIGHT_MAGENTA}${INFO} Operating system updates available; installing now..."
 		apt-get upgrade --fix-missing --fix-broken -y
 		apt-get -q=2 autoremove -y
 		apt-get -q=2 clean
@@ -139,11 +139,11 @@ perform_update() {
 		echo -e "  ${INFO} No operating system updates required.\n"
 	    fi
 	    if [ "$1" == "os" ]; then 
-	    echo -e "${BULL} ${COL_LIGHT_BLUE}${INFO} WPSD is ${BOLD}not${COL_NC} updated by using ${COL_LIGHT_BLUE}${BOLD}sudo wpsd-update os${COL_NC}"
+	    echo -e "${BULL} ${COL_BRIGHT_BLUE}${INFO} WPSD is ${BOLD}not${COL_NC} updated by using ${COL_BRIGHT_BLUE}${BOLD}sudo wpsd-update os${COL_NC}"
 	    echo -e "      To check for and install WPSD updates, run this"
-	    echo -e "      program again as: '${COL_LIGHT_BLUE}${BOLD}sudo wpsd-update${COL_NC}'"
+	    echo -e "      program again as: '${COL_BRIGHT_BLUE}${BOLD}sudo wpsd-update${COL_NC}'"
 	    echo -e "      To check for and install WPSD and OS updates, run this"
-	    echo -e "      program again as: '${COL_LIGHT_BLUE}${BOLD}sudo wpsd-update all${COL_NC}'\n"
+	    echo -e "      program again as: '${COL_BRIGHT_BLUE}${BOLD}sudo wpsd-update all${COL_NC}'\n"
            exit 0
         fi
 	fi
@@ -179,7 +179,7 @@ perform_update() {
 	    sed -i '\/PIDFile=\/run\/nginx.pid/a ExecStartPre=\/bin\/mkdir -p \/var\/log\/nginx' /lib/systemd/system/nginx.service
 	    systemctl daemon-reload
 	    systemctl restart nginx.service
-	    #echo -e "  ${NOTE} ${COL_LIGHT_YELLOW}Note:${COL_NC} Web server configuration has been updated by operating system; restarting update..."
+	    #echo -e "  ${NOTE} ${COL_BRIGHT_YELLOW}Note:${COL_NC} Web server configuration has been updated by operating system; restarting update..."
 	    exec "$0" "$@"
 	    exit 1
 	fi
@@ -314,11 +314,11 @@ perform_update() {
     if [ -t 1 ]; then
     # This is running from a terminal, so it should be safe to update the OS
 	if [[ "$1" != "os" && "$1" != "all" ]]; then
-	    echo -e "${BULL} ${COL_LIGHT_BLUE}${INFO} Operating system is ${BOLD}not${COL_NC} updated by default..."
+	    echo -e "${BULL} ${COL_BRIGHT_BLUE}${INFO} Operating system is ${BOLD}not${COL_NC} updated by default..."
 	    echo -e "      To check for and install OS updates, run this"
-	    echo -e "      program again as: '${COL_LIGHT_BLUE}${BOLD}sudo wpsd-update os${COL_NC}'"
+	    echo -e "      program again as: '${COL_BRIGHT_BLUE}${BOLD}sudo wpsd-update os${COL_NC}'"
 	    echo -e "      To check for and install WPSD and OS updates, run this"
-	    echo -e "      program again as: '${COL_LIGHT_BLUE}${BOLD}sudo wpsd-update all${COL_NC}'\n"
+	    echo -e "      program again as: '${COL_BRIGHT_BLUE}${BOLD}sudo wpsd-update all${COL_NC}'\n"
 	fi
     fi
 

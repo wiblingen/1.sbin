@@ -27,16 +27,16 @@ function DisplayRepoStatus() {
     branch=$(git --work-tree=${dir} --git-dir=${dir}/.git symbolic-ref --short HEAD)
     ver_cmd=$( git --work-tree=${dir} --git-dir=${dir}/.git rev-parse HEAD | tail -1 | awk '{ print substr($1,1,10) }' ) # last pipe to awk: converts long hash to 10 chars.
     if [ "${branch}" != "master" ] ; then
-        echo -e "  ${BULL} $TARGET:\n      On the '${BOLD}${branch}${COL_NC}' branch; Ver. # ${COL_LIGHT_ORANGE}${ver_cmd}${COL_NC}"
+        echo -e "  ${BULL} $TARGET:\n      On the '${BOLD}${branch}${COL_NC}' branch; Ver. # ${COL_BRIGHT_ORANGE}${ver_cmd}${COL_NC}"
     else
-        echo -e "  ${BULL} $TARGET:\n      Ver. # ${COL_LIGHT_ORANGE}${ver_cmd}${COL_NC}"
+        echo -e "  ${BULL} $TARGET:\n      Ver. # ${COL_BRIGHT_ORANGE}${ver_cmd}${COL_NC}"
     fi
 }
 
 function DisplayStatus() {
     clear
     echo -e -n "\nThis is...
-${COL_LIGHT_CYAN}${BOLD}"
+${COL_BRIGHT_CYAN}${BOLD}"
 echo ' _      _____  _______ 
 | | /| / / _ \/ __/ _ \
 | |/ |/ / ___/\ \/ // /
@@ -54,8 +54,8 @@ echo ' _      _____  _______
     if [ -t 1 ] || [ -n "$PS1" ] ; then # since this is called by `motdgen`, omit the following for the motd...
 	echo -e "\n${COL_NC}Environment Status"
 	echo -e "------------------"
-	echo -e "  ${BULL} WPSD Instance ID:\n      ${COL_LIGHT_MAGENTA}${UUID}${COL_NC}"
- 	echo -e "  ${BULL} Platform Info:\n      ${COL_LIGHT_MAGENTA}${platInfo}${COL_NC}"
+	echo -e "  ${BULL} WPSD Instance ID:\n      ${COL_BRIGHT_MAGENTA}${UUID}${COL_NC}"
+ 	echo -e "  ${BULL} Platform Info:\n      ${COL_BRIGHT_MAGENTA}${platInfo}${COL_NC}"
 	echo -e ""
     fi
 }

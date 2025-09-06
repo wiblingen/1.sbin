@@ -282,7 +282,7 @@ then
   clear
   echo "This utility is used to flash/upgrade your hotspot/repeater modem."
   if [[ "${EXT_CALL}" != "1" ]]; then
-      echo -e "${NOTE} ${COL_LIGHT_YELLOW}Note:${COL_NC} No modem specified!"
+      echo -e "${NOTE} ${COL_BRIGHT_YELLOW}Note:${COL_NC} No modem specified!"
   fi
   echo "To use the command, you need to specify your modem type..."
   echo "Please choose from the list below, and run this command again:"
@@ -339,12 +339,12 @@ fi
 if [ -t 1 ]; then # term. only
     clear
 
-    echo -e -n "${COL_LIGHT_CYAN}${BOLD}"
+    echo -e -n "${COL_BRIGHT_CYAN}${BOLD}"
     echo '    _      _____  _______ 
    | | /| / / _ \/ __/ _ \
    | |/ |/ / ___/\ \/ // /
    |__/|__/_/  /___/____/'
-    echo -e -n "${COL_NC}${COL_LIGHT_ORANGE}${BOLD}Modem Firmware Update Utility${COL_NC}\n\n"
+    echo -e -n "${COL_NC}${COL_BRIGHT_ORANGE}${BOLD}Modem Firmware Update Utility${COL_NC}\n\n"
 
     if [ -n "$modem_description_line" ]; then
 	echo -e "${BULL} Found modem installed:"
@@ -358,7 +358,7 @@ fi
 #
 if [ "$1" ] ; then
   # Get the latest FW version
-  echo -e "    ${INFO} Latest firmware version: ${COL_LIGHT_BLUE}${BOLD}${VERSION}${COL_NC}\n"
+  echo -e "    ${INFO} Latest firmware version: ${COL_BRIGHT_BLUE}${BOLD}${VERSION}${COL_NC}\n"
 
   if [[ "$NP" != "1" ]]; then
     read -n 1 -s -r -p "Press any key to flash '${1}' firmware version ${VERSION} to this modem, or 'q' to abort... "
@@ -527,7 +527,7 @@ if [ "$1" ] ; then
 	    systemctl start pistar-watchdog.service >/dev/null 2>&1
   	    echo -e -n "    ${TICK} ${COMPL} Modem firmware flash successful!\n        Modem reinitialized.\n"
   	    echo ""
-	    echo -e "${INFO} ${COL_LIGHT_YELLOW}Note:${COL_NC} You will need to refresh your dashboard to reflect the updated firmware version.\n"
+	    echo -e "${INFO} ${COL_BRIGHT_YELLOW}Note:${COL_NC} You will need to refresh your dashboard to reflect the updated firmware version.\n"
 	else
 	    echo -e "    ${CROSS} ${COL_BRIGHT_RED}ERROR:${COL_NC} Modem flashing failed. The serial port was either busy, or the modem is"
 	    echo -e "               possibly locked from the vendor. You can try running this command again,"
