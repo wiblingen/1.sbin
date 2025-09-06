@@ -38,6 +38,7 @@ if [ -t 1 ] || [ -n "$PS1" ] || [ -n "$FORCE_COLOR" ] ; then # terminal and bash
     COL_BRIGHT_RED='\e[38;5;9m'
     COL_BRIGHT_GREEN='\e[38;5;10m'
     COL_BRIGHT_YELLOW='\e[38;5;11m'
+    COL_BRGHT_ORANGE='\e[38;5;208m'
     COL_BRIGHT_BLUE='\e[38;5;12m'
     COL_BRIGHT_MAGENTA='\e[38;5;13m'
     COL_BRIGHT_CYAN='\e[38;5;14m'
