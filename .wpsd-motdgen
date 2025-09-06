@@ -31,15 +31,13 @@ done
 echo -e "$( /usr/local/sbin/wpsd-version )
 ${COL_NC}
 ${QUES} Your WPSD dashboard can be accesed from:
-    ${BULL} ${COL_BRIGHT_MAGENTA}http://$(hostname).local/${COL_NC}
-    ${BULL} ${COL_BRIGHT_MAGENTA}http://$(hostname)/${COL_NC}
-    ${BULL} ${COL_BRIGHT_MAGENTA}http://$(hostname -I | awk '{for(i=1;i<=NF;i++) if($i ~ /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ && $i != "127.0.0.1") {print $i; exit}}')/${COL_NC}
+    ${BULL} ${COL_LIGHT_MAGENTA}http://$(hostname).local/${COL_NC}
+    ${BULL} ${COL_LIGHT_MAGENTA}http://$(hostname)/${COL_NC}
+    ${BULL} ${COL_LIGHT_MAGENTA}http://$(hostname -I | awk '{for(i=1;i<=NF;i++) if($i ~ /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ && $i != "127.0.0.1") {print $i; exit}}')/${COL_NC}
 
 ${INFO} WPSD command-line tools are all prefixed with \"wpsd-\".
-    Simply type ${COL_BRIGHT_CYAN}${BOLD}wpsd${COL_NC} and then the TAB key twice to see a list.
+    Simply type ${BOLD}${COL_BRIGHT_CYAN}wpsd-${COL_NC} and then the TAB key twice to see a list.
 
-The WPSD Project ${COL_BRIGHT_BLUE}${BOLD}<https://wpsd.radio>${COL_NC}
-(C) Chip Cuccio, W0CHP -- Made in Winona, Minn. USA
-
+WPSD Project: (C) Chip Cuccio, W0CHP -- Made in Winona, Minn. USA
 ${NOTE} WPSD is Free Software, and comes with ABSOLUTELY NO WARRANTY.${COL_NC}
 " > /etc/motd
