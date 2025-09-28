@@ -94,7 +94,9 @@ if $connection_established; then
     echo -e "\nUpdating binaries..."
     # Update the Binaries
     branch="master"
+    git --work-tree=/usr/local/bin --git-dir=/usr/local/bin/.git reset --hard origin/master
     git --work-tree=/usr/local/bin --git-dir=/usr/local/bin/.git pull origin "${branch}"
+    git --work-tree=/usr/local/bin --git-dir=/usr/local/bin/.git reset --hard origin/master
 
     # dvmega cast-specific stuff
     castResult=$(isDVmegaCast)
