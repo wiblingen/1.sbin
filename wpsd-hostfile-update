@@ -94,7 +94,7 @@ GROUPSTXT=/usr/local/etc/tmp/groups.txt
 STRIPPED=/usr/local/etc/tmp/stripped.csv
 
 echo "Applying custom APRSHosts.txt overrides (if present)..."
-# If there is a DMR override file, add its contents to APRSHosts.txt
+# If there is a APRS override file, add its contents to APRSHosts.txt
 if [ -f "/root/APRSHosts.txt" ]; then
 	cat /root/APRSHosts.txt >> ${APRSHOSTS}
 fi
