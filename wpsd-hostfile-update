@@ -81,6 +81,7 @@ done < "$checksum_file"
 echo "Hostfile checksums OK. Updating with new hostfiles..."
 
 APRSHOSTS=/usr/local/etc/tmp/APRSHosts.txt
+APRSSERVERS=/usr/local/etc/tmp/aprs_servers.json
 DExtraHOSTS=/usr/local/etc/tmp/DExtra_Hosts.txt
 DMRIDFILE=/usr/local/etc/tmp/DMRIds.dat
 DMRHOSTS=/usr/local/etc/tmp/DMR_Hosts.txt
@@ -94,9 +95,16 @@ GROUPSTXT=/usr/local/etc/tmp/groups.txt
 STRIPPED=/usr/local/etc/tmp/stripped.csv
 
 echo "Applying custom APRSHosts.txt overrides (if present)..."
-# If there is a APRS override file, add its contents to APRSHosts.txt
+# If there is a APRS Hosts override file, add its contents to APRSHosts.txt
 if [ -f "/root/APRSHosts.txt" ]; then
 	cat /root/APRSHosts.txt >> ${APRSHOSTS}
+fi
+
+echo "Applying custom aprs_servers.json overrides (if present)..."
+# If there is a APRS Servers override file, add its contents to aprs_servers.json
+if [ -f "/root/aprs_servers.json" ]; then
+	jq -s 'flatten | unique' ${APRSSERVERS} /root/aprs_servers.json >> ${APRSSERVERS}.tmp
+    mv ${APRSSERVERS}.tmp ${APRSSERVERS}
 fi
 
 echo "Handling D-Extra/D-Plus hostfile configuration..."
