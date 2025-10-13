@@ -90,7 +90,7 @@ conn_check() {
 
     if curl --silent --fail --output "$temp_file" -A "${uAStr_chk}" "$remote_version_url"; then
         connection_established=true
-        mv "$temp_file" "$ini_file"
+        mv -f "$temp_file" "$ini_file" > /dev/null 2>&1
         chmod 644 "$ini_file"
     else
         rm -f "$temp_file"
