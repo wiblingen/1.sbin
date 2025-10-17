@@ -81,10 +81,9 @@ EOF
 source /usr/local/sbin/.wpsd-common-funcs
 
 # If OS is Debian 12 (Bookworm) or newer, use systemd.
-if [ -n "$OS_VER" ] && [ "${OS_VER}" -ge "12" ]; then
+if [ -n "$OS_VER" ] && [ "${OS_VER}" -ge 12 ]; then
 
   ## Systemd method for Debian 12+ ##
-  echo "Info: Debian ${OS_VER} detected. Creating robust systemd one-shot service."
   cat << EOF > /etc/systemd/system/resize2fs-once.service
 [Unit]
 Description=Resize root filesystem to fill partition
