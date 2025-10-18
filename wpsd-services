@@ -76,13 +76,13 @@ function stop_services()
     systemctl stop wpsd-hostfile-update.timer > /dev/null 2>&1
 
     if [ "$DISPLAY_VALUE" == "Nextion" ] ; then
-        if [ "${OS_VER}" -ge "12" ] ; then
+        if [ "${OS_VER}" -ge 12 ] ; then
             /usr/local/sbin/.wpsd-nextion-text.py -c > /dev/null 2>&1
             /usr/local/sbin/.wpsd-nextion-text.py t0 "Services Stopped" > /dev/null 2>&1
         fi
     fi
     if [ "$DISPLAY_VALUE" == "OLED" ] ; then
-        if [ "${OS_VER}" -ge "12" ] ; then
+        if [ "${OS_VER}" -ge 12 ] ; then
             /usr/local/sbin/.wpsd-oled.text.py --text1 "WPSD" --text2 "Services Stopped" > /dev/null 2>&1
         fi
     fi
@@ -99,13 +99,13 @@ function start_services()
     echo -ne "Starting WPSD services..."
 
     if [ "$DISPLAY_VALUE" == "Nextion" ] ; then
-        if [ "${OS_VER}" -ge "12" ] ; then
+        if [ "${OS_VER}" -ge 12 ] ; then
             /usr/local/sbin/.wpsd-nextion-text.py -c > /dev/null 2>&1
             /usr/local/sbin/.wpsd-nextion-text.py t0 "Starting WPSD..." > /dev/null 2>&1
         fi
     fi
     if [ "$DISPLAY_VALUE" == "OLED" ] ; then
-        if [ "${OS_VER}" -ge "12" ] ; then
+        if [ "${OS_VER}" -ge 12 ] ; then
             /usr/local/sbin/.wpsd-oled.text.py --text1 "WPSD" --text2 "Starting..." > /dev/null 2>&1
         fi
     fi

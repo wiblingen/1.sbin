@@ -14,25 +14,25 @@ source /usr/local/sbin/.wpsd-common-funcs
 if [ "$DISPLAY_VALUE" == "Nextion" ] ; then # user has Nextion defined in mmdvmhost, so let's natively support it:
     # Check if the GroupsFileSrc and DMRidFileSrc exist in the INI file
     if ! grep -q "^GroupsFileSrc=" /etc/mmdvmhost; then
-  	# Insert GroupsFileSrc in the NextionDriver section
-  	sed -i '/^\[NextionDriver\]$/a GroupsFileSrc=https://hostfiles.w0chp.net/groupsNextion.txt' /etc/mmdvmhost
+        # Insert GroupsFileSrc in the NextionDriver section
+        sed -i '/^\[NextionDriver\]$/a GroupsFileSrc=https://hostfiles.w0chp.net/groupsNextion.txt' /etc/mmdvmhost
     fi
     # Check if GroupsFile is set to groups.txt and change it to groupsNextion.txt
     if grep -q "^GroupsFile=groups.txt" /etc/mmdvmhost; then
-	sed -i 's/^GroupsFile=groups.txt$/GroupsFile=groupsNextion.txt/' /etc/mmdvmhost
+        sed -i 's/^GroupsFile=groups.txt$/GroupsFile=groupsNextion.txt/' /etc/mmdvmhost
     fi
     if ! grep -q "^Requires=nextiondriver.service" /lib/systemd/system/mmdvmhost.service; then
-	sed -i '/^After=syslog.target network.target/a Requires=nextiondriver.service' /lib/systemd/system/mmdvmhost.service
+        sed -i '/^After=syslog.target network.target/a Requires=nextiondriver.service' /lib/systemd/system/mmdvmhost.service
     fi
     systemctl stop nextiondriver.service > /dev/null 2>&1
     /usr/bin/killall NextionDriver > /dev/null 2>&1
     systemctl enable nextiondriver.service > /dev/null 2>&1
     systemctl enable nextiondriver-shutdown.timer > /dev/null 2>&1
-    if [ "${OS_VER}" -ge "12" ] ; then
- 	systemctl enable wpsd-nx-bootup.service > /dev/null 2>&1
-	systemctl enable wpsd-nx-reboot.service > /dev/null 2>&1
-	systemctl enable wpsd-nx-shutdown.service > /dev/null 2>&1
-	systemctl enable wpsd-nx-preshutdown.service > /dev/null 2>&1
+    if [ "${OS_VER}" -ge 12 ] ; then
+        systemctl enable wpsd-nx-bootup.service > /dev/null 2>&1
+        systemctl enable wpsd-nx-reboot.service > /dev/null 2>&1
+        systemctl enable wpsd-nx-shutdown.service > /dev/null 2>&1
+        systemctl enable wpsd-nx-preshutdown.service > /dev/null 2>&1
     fi
 else
     if grep -qo 'Requires=nextiondriver.service' /lib/systemd/system/mmdvmhost.service ; then # if nextion is re'q, get rid of it
@@ -48,13 +48,13 @@ else
         systemctl stop nextiondriver.service > /dev/null 2>&1
         /usr/bin/killall NextionDriver > /dev/null 2>&1
         systemctl disable nextiondriver.service > /dev/null 2>&1
-	systemctl disable nextiondriver-shutdown.timer > /dev/null 2>&1
+        systemctl disable nextiondriver-shutdown.timer > /dev/null 2>&1
     fi
 fi
 
 # oled rules
 if [ "$DISPLAY_VALUE" == "OLED" ] ; then 
-    if [ "${OS_VER}" -ge "12" ] ; then
+    if [ "${OS_VER}" -ge 12 ] ; then
 	systemctl enable wpsd-oled-bootup.service > /dev/null 2>&1
 	systemctl enable wpsd-oled-reboot.service > /dev/null 2>&1
 	systemctl enable wpsd-oled-shutdown.service > /dev/null 2>&1
