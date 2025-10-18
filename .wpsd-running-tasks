@@ -35,8 +35,10 @@ fi
 #echo "$(tail -500 /var/log/nginx/error.log)" > /var/log/nginx/error.log
 if [ "${OS_VER}" -lt 12 ]; then
     echo "$(tail -500 /var/log/php7.4-fpm.log)" > /var/log/php7.4-fpm.log
-else
+else if [ "${OS_VER}" -eq 12 ]; then
     echo "$(tail -500 /var/log/php8.2-fpm.log)" > /var/log/php8.2-fpm.log
+else
+    echo "$(tail -500 /var/log/php8.4-fpm.log)" > /var/log/php8.4-fpm.log
 fi
 
 # Clean up systemd logs
