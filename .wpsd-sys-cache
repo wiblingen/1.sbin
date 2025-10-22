@@ -166,14 +166,14 @@ fi
 # modem fw & tcxo
 LOG_MMDVM_NOW="/var/log/pi-star/MMDVM-$(date -u +'%Y-%m-%d').log"
 LOG_MMDVM_PREVIOUS="/var/log/pi-star/MMDVM-$(date -u --date="yesterday" +'%Y-%m-%d').log"
+LOG_MMDVM_DAY_BEFORE="/var/log/pi-star/MMDVM-$(date -u --date="2 days ago" +'%Y-%m-%d').log" 
 LOG_SEARCH_STRING="MMDVM protocol version"
 MODEM_FIRMWARE=""
 # Check if log processing should be bypassed
 if [ "$NO_LOG_PROC" = "1" ]; then
-    # Set any default values you need here
     LOG_LINE=""
 else
-    # Loop until the search string is found in either today's or yesterday's log
+    # Loop until the search string is found in today's, yesterday's, or day before's log
     LOG_LINE=""
     attempts=1
     max_attempts=30
@@ -181,6 +181,9 @@ else
         LOG_LINE=$(grep "$LOG_SEARCH_STRING" "$LOG_MMDVM_NOW" | tail -1)
         if [ -z "$LOG_LINE" ]; then
             LOG_LINE=$(grep "$LOG_SEARCH_STRING" "$LOG_MMDVM_PREVIOUS" | tail -1)
+        fi
+        if [ -z "$LOG_LINE" ]; then
+            LOG_LINE=$(grep "$LOG_SEARCH_STRING" "$LOG_MMDVM_DAY_BEFORE" | tail -1)
         fi
         if [ -z "$LOG_LINE" ]; then
             sleep 1
@@ -257,21 +260,6 @@ if ! grep -w 'WPSD_Ver' "$TMP_INI_FILE" > /dev/null; then
 else
     sed -i "/WPSD_Ver/c WPSD_Ver = ${WPSDver}" "$TMP_INI_FILE"
 fi
-
-# cleanup legacy entries
-if [ $(grep -c 'MMDVMHost' "$TMP_INI_FILE") -gt 2 ]; then
-    sed -i '/MMDVM/d' "$TMP_INI_FILE"
-    sed -i "/Version = /a MMDVMHost = " "$TMP_INI_FILE"
-fi
-if grep -q "OrangePiZero" "$TMP_INI_FILE"; then
-    sed -i 's/OrangePiZero/OrangePi/g' "$TMP_INI_FILE" 
-fi
-if grep -q "Hardware = RPi" "$TMP_INI_FILE"; then
-    sed -i 's/Hardware = RPi/Hardware = RaspberryPi/g' "$TMP_INI_FILE" 
-fi
-
-# cleanup last line..
-#sed -i '${/^$/d}' "$TMP_INI_FILE"
 
 if ! cmp -s "$TMP_INI_FILE" "$INI_FILE" ; then
     cp "$TMP_INI_FILE" "$INI_FILE"
