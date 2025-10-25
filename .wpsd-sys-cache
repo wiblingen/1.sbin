@@ -1,6 +1,6 @@
 #!/bin/bash
 
-### Cache HW and other pertinent information for a file used across the software & session storage
+### Cache HW and other pertinent information used across the software & session storage
 
 INI_FILE="/etc/WPSD-release"
 TMP_INI_FILE="/usr/local/etc/.WPSD-release"
@@ -300,3 +300,4 @@ fi
 if ! cmp -s "$TMP_INI_FILE" "$INI_FILE" ; then
     cp "$TMP_INI_FILE" "$INI_FILE"
 fi
+
