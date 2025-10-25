@@ -190,7 +190,7 @@ else
         fi
 
         if [ $attempts -ge $max_attempts ]; then
-            exit 1 # keep existing one until this runs again with success.
+            break # Just stop trying and let the script use existing values
         fi
         attempts=$((attempts + 1))
     done
@@ -223,9 +223,33 @@ elif [[ "$LOG_LINE" =~ description:\ ([^ ]+)-v?([0-9.]+) ]]; then
     MODEM_FIRMWARE="${BASH_REMATCH[1]}-v.${BASH_REMATCH[2]}"
 fi
 
-# Fallback to ModemType if MODEM_FIRMWARE is empty
+# Get current FW value from INI
+CURRENT_MODEM_FW=""
+if [ -f "$TMP_INI_FILE" ]; then
+    CURRENT_MODEM_FW=$(grep -oP '^ModemFW = \K.*' "$TMP_INI_FILE")
+fi
+
+# Fallback logic
 if [ -z "$MODEM_FIRMWARE" ]; then
-    MODEM_FIRMWARE="${ModemType}"
+    # No new value from logs.
+    # Check if we have a current value.
+    if [ -n "$CURRENT_MODEM_FW" ]; then
+        # Use the existing value
+        MODEM_FIRMWARE="$CURRENT_MODEM_FW"
+    else
+        # No new value AND no current value, use ModemType fallback
+        MODEM_FIRMWARE="${ModemType}"
+    fi
+fi
+
+# Update the release file
+if ! grep -w 'ModemFW' "$TMP_INI_FILE" > /dev/null; then
+    sed -i "/ModemType = /a ModemFW = ${MODEM_FIRMWARE}" "$TMP_INI_FILE"
+else
+    # Only update if current is empty OR new is different
+    if [ -z "$CURRENT_MODEM_FW" ] || [ "$MODEM_FIRMWARE" != "$CURRENT_MODEM_FW" ]; then
+        sed -i "/ModemFW =/c ModemFW = ${MODEM_FIRMWARE}" "$TMP_INI_FILE"
+    fi
 fi
 
 MODEM_TCXO_FREQ=""
@@ -235,21 +259,33 @@ if [[ "$LOG_LINE" == *"MHz"* ]]; then
     MODEM_TCXO_FREQ=$(echo "$MODEM_TCXO_FREQ" | sed 's/MHz/ MHz/')
 fi
 
-# Fallback if  is empty
+# Get current TCXO value from INI
+CURRENT_TCXO=""
+if [ -f "$TMP_INI_FILE" ]; then
+    CURRENT_TCXO=$(grep -oP '^TCXO = \K.*' "$TMP_INI_FILE")
+fi
+
+# Fallback if new value is empty
 if [ -z "$MODEM_TCXO_FREQ" ]; then
-    MODEM_TCXO_FREQ="Updating. Please wait."
+    # No new value from logs.
+    # Check if we have a current value.
+    if [ -n "$CURRENT_TCXO" ]; then
+        # Use the existing value
+        MODEM_TCXO_FREQ="$CURRENT_TCXO"
+    else
+        # No new value AND no current value, use fallback
+        MODEM_TCXO_FREQ="Updating. Please wait."
+    fi
 fi
 
 # Update the release file
-if ! grep -w 'ModemFW' "$TMP_INI_FILE" > /dev/null; then
-    sed -i "/ModemType = /a ModemFW = ${MODEM_FIRMWARE}" "$TMP_INI_FILE"
-else
-    sed -i "/ModemFW =/c ModemFW = ${MODEM_FIRMWARE}" "$TMP_INI_FILE"
-fi
 if ! grep -w 'TCXO' "$TMP_INI_FILE" > /dev/null; then
     sed -i "/ModemFW = /a TCXO = ${MODEM_TCXO_FREQ}" "$TMP_INI_FILE"
 else
-    sed -i "/TCXO =/c TCXO = ${MODEM_TCXO_FREQ}" "$TMP_INI_FILE"
+    # Only update if current is empty OR new is different
+    if [ -z "$CURRENT_TCXO" ] || [ "$MODEM_TCXO_FREQ" != "$CURRENT_TCXO" ]; then
+        sed -i "/TCXO =/c TCXO = ${MODEM_TCXO_FREQ}" "$TMP_INI_FILE"
+    fi
 fi
 
 # add / update WPSD version hash to "$TMP_INI_FILE"
