@@ -43,6 +43,8 @@ chmod 775 /var/log/pi-star > /dev/null 2>&1
 
 process_log_file > /dev/null 2>&1
 
+apt-get -y --purge autoremove >/dev/null 2>&1
+
 if [ "$OptIntoDiags_value" != 'true' ] ; then
     echo "User has opted out of updates and diagnostics. Exiting..."
     exit 1
