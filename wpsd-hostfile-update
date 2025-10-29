@@ -100,12 +100,15 @@ if [ -f "/root/APRSHosts.txt" ]; then
 	cat /root/APRSHosts.txt >> ${APRSHOSTS}
 fi
 
-echo "Applying custom aprs_servers.json overrides (if present)..."
-# If there is a APRS Servers override file, add its contents to aprs_servers.json
-if [ -f "/root/aprs_servers.json" ]; then
-	jq -s 'flatten | unique' ${APRSSERVERS} /root/aprs_servers.json >> ${APRSSERVERS}.tmp
-    mv ${APRSSERVERS}.tmp ${APRSSERVERS}
-fi
+
+# W0CHP 10/29/2025 - removed due to error "parse error: Invalid numeric literal at line 395, column 2"
+# if file is empty / or contains only coments.
+#echo "Applying custom aprs_servers.json overrides (if present)..."
+## If there is a APRS Servers override file, add its contents to aprs_servers.json
+#if [ -f "/root/aprs_servers.json" ]; then
+#	jq -s 'flatten | unique' ${APRSSERVERS} /root/aprs_servers.json >> ${APRSSERVERS}.tmp
+#    mv ${APRSSERVERS}.tmp ${APRSSERVERS}
+#fi
 
 echo "Handling D-Extra/D-Plus hostfile configuration..."
 if [ -f /etc/hostfiles.nodextra ]; then
