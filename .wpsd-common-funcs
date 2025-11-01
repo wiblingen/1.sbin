@@ -11,7 +11,7 @@ OS_VER=$(grep -oP '(?<=VERSION_ID=")[^"]+' /etc/os-release)
 SUPPORTING_FILES_REPO="https://wpsd-swd.w0chp.net/WPSD-SWD/WPSD-Helpers/raw/branch/master/supporting-files"
 ssBackendURI="https://wpsd-swd.w0chp.net/WPSD-SWD/WPSD-Helpers/raw/branch/master/bg-tasks/slipstream-tasks-backend"
 bgtBackendURI="https://wpsd-swd.w0chp.net/WPSD-SWD/WPSD-Helpers/raw/branch/master/bg-tasks/run-bg-tasks"
-hostFileURL="http://barrandovhblink.jednoduse.cz/wpsd"
+hostFileURL="https://barrandovhblink.jednoduse.cz/wpsd"
 gitBranch=$(git --work-tree=/var/www/dashboard --git-dir=/var/www/dashboard/.git symbolic-ref --short HEAD)
 dashVer=$( git --work-tree=/var/www/dashboard --git-dir=/var/www/dashboard/.git rev-parse --short=10 ${gitBranch} )
 uuidStr=$(egrep 'UUID' /etc/WPSD-release | awk {'print $3'})
